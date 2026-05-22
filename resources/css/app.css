@@ -1,0 +1,258 @@
+@import 'tailwindcss';
+
+@import "tw-animate-css";
+
+@source '../../vendor/laravel/framework/src/Illuminate/Pagination/resources/views/*.blade.php';
+@source '../../storage/framework/views/*.php';
+
+@custom-variant dark (&:is(.dark *));
+
+@theme inline {
+  --font-sans:
+    Instrument Sans, ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji',
+    'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji';
+
+  --radius-lg: var(--radius);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-sm: calc(var(--radius) - 4px);
+
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+
+  --color-sidebar: var(--sidebar-background);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-ring: var(--sidebar-ring);
+}
+
+/*
+  The default border color has changed to `currentColor` in Tailwind CSS v4,
+  so we've added these compatibility styles to make sure everything still
+  looks the same as it did with Tailwind CSS v3.
+
+  If we ever want to remove these styles, we need to add an explicit border
+  color utility to any element that depends on these defaults.
+*/
+@layer base {
+  *,
+  ::after,
+  ::before,
+  ::backdrop,
+  ::file-selector-button {
+    border-color: var(--color-gray-200, currentColor);
+  }
+}
+
+@layer utilities {
+  body,
+  html {
+    --font-sans:
+      'Instrument Sans', ui-sans-serif, system-ui, sans-serif,
+      'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol',
+      'Noto Color Emoji';
+  }
+}
+
+:root {
+  --background: #ffffff;
+  --foreground: #0e6ba8;
+  --card: #ffffff;
+  --card-foreground: #0e6ba8;
+  --popover: #ffffff;
+  --popover-foreground: #0e6ba8;
+  --primary: #0e6ba8;
+  --primary-foreground: #ffffff;
+  --secondary: #a6e1fa;
+  --secondary-foreground: #001c55;
+  --muted: #a6e1fa;
+  --muted-foreground: #001c55;
+  --accent: #a6e1fa;
+  --accent-foreground: #001c55;
+  --destructive: #ef4444;
+  --destructive-foreground: #ffffff;
+  --border: #0e6ba8;
+  --input: #0e6ba8;
+  --ring: #0e6ba8;
+  --chart-1: #0e6ba8;
+  --chart-2: #a6e1fa;
+  --chart-3: #001c55;
+  --chart-4: #00072d;
+  --chart-5: #ffffff;
+  --radius: 0.5rem;
+  --sidebar-background: #001c55;
+  --sidebar-foreground: #a6e1fa;
+  --sidebar-primary: #0e6ba8;
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: #a6e1fa;
+  --sidebar-accent-foreground: #001c55;
+  --sidebar-border: #0e6ba8;
+  --sidebar-ring: #a6e1fa;
+  --sidebar: #001c55;
+}
+
+.dark {
+  --background: #00072d;
+  --foreground: #ffffff;
+  --card: #001c55;
+  --card-foreground: #ffffff;
+  --popover: #001c55;
+  --popover-foreground: #ffffff;
+  --primary: #a6e1fa;
+  --primary-foreground: #ffffff;
+  --secondary: #001c55;
+  --secondary-foreground: #a6e1fa;
+  --muted: #001c55;
+  --muted-foreground: #a6e1fa;
+  --accent: #0e6ba8;
+  --accent-foreground: #ffffff;
+  --destructive: #ef4444;
+  --destructive-foreground: #ffffff;
+  --border: #0e6ba8;
+  --input: #0e6ba8;
+  --ring: #a6e1fa;
+  --chart-1: #a6e1fa;
+  --chart-2: #0e6ba8;
+  --chart-3: #001c55;
+  --chart-4: #00072d;
+  --chart-5: #ffffff;
+  --sidebar-background: #001c55;
+  --sidebar-foreground: #ffffff;
+  --sidebar-primary: #a6e1fa;
+  --sidebar-primary-foreground: #001c55;
+  --sidebar-accent: #0e6ba8;
+  --sidebar-accent-foreground: #ffffff;
+  --sidebar-border: #0e6ba8;
+  --sidebar-ring: #a6e1fa;
+  --sidebar: #001c55;
+}
+
+@layer base {
+    * {
+        @apply border-border;
+    }
+
+    body {
+        @apply bg-background text-foreground;
+    }
+    h1,
+    h2,
+    h3,
+    h4,
+    h5,
+    h6 {
+        color: #001c55;
+    }
+    .dark h1,
+    .dark h2,
+    .dark h3,
+    .dark h4,
+    .dark h5,
+    .dark h6 {
+        color: #a6e1fa;
+    }
+}
+
+/*
+  ---break---
+*/
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+}
+
+@layer components {
+  .tarteaucitronAlertBig {
+    background-color: var(--color-card);
+    color: var(--color-card-foreground);
+    border-radius: 1rem;
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.35);
+    max-width: 32rem;
+    font-family: var(--font-sans);
+  }
+
+  .tarteaucitronAlertBig #tarteaucitronDisclaimerAlert {
+    font-size: 0.95rem;
+    line-height: 1.5;
+    margin-bottom: 1rem;
+  }
+
+  .tarteaucitronAlertBig button {
+    border-radius: 9999px;
+    font-weight: 600;
+    padding: 0.65rem 1.5rem;
+    transition: transform 150ms ease, box-shadow 150ms ease;
+  }
+
+  .tarteaucitronAlertBig button:focus-visible {
+    outline: 3px solid var(--color-ring);
+    outline-offset: 2px;
+  }
+
+  .tarteaucitronAlertBig button:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 10px 20px -10px rgba(0, 0, 0, 0.35);
+  }
+
+  #tarteaucitronPersonalize {
+    background-color: transparent;
+    color: var(--color-primary);
+    border: 2px solid var(--color-primary);
+  }
+
+  #tarteaucitronDenyAll {
+    background-color: var(--color-muted);
+    color: var(--color-muted-foreground);
+    border: 2px solid var(--color-muted);
+  }
+
+  #tarteaucitronAcceptAll {
+    background-color: var(--color-primary);
+    color: var(--color-primary-foreground);
+    border: 2px solid var(--color-primary);
+  }
+
+  #tarteaucitronRoot .tarteaucitronH2 {
+    color: var(--color-foreground);
+    font-weight: 700;
+  }
+}

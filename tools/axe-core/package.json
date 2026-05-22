@@ -1,0 +1,6 @@
+{
+  "name": "axe-core",
+  "version": "0.0.0-local",
+  "type": "module",
+  "exports": "./index.mjs"
+}
