@@ -18,10 +18,11 @@ class DatabaseSeeder extends Seeder
 
         User::factory()->create([
             'name' => 'Baptiste',
-            'username' => 'baptiste-admin',
+            'username' => 'baptiste-superadmin',
             'email' => 'baptiste@admin.com',
             'password' => Hash::make('123456789'),
             'is_admin' => true,
+            'is_super_admin' => true,
         ]);
 
         $this->call(DummyGameSeeder::class);

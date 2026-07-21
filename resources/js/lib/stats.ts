@@ -10,11 +10,9 @@ export interface DashboardStats {
         total: number;
         average: number | null;
     };
-    comments: {
-        approved_total: number;
-    };
-    tips: {
-        approved_total: number;
+    articles: {
+        published_total: number;
+        premium_total: number;
     };
     users: {
         total: number;

@@ -89,7 +89,7 @@ const features = computed<Feature[]>(() => [
     {
         title: 'Avatar mis en valeur',
         description:
-            'Activez des bordures lumineuses exclusives pour votre avatar et démarquez-vous dans les commentaires et classements.',
+            'Activez des bordures lumineuses exclusives pour votre avatar et demarquez-vous dans les classements.',
         icon: Sparkles,
     },
     {

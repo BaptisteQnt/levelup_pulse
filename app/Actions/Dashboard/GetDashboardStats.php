@@ -2,10 +2,9 @@
 
 namespace App\Actions\Dashboard;
 
-use App\Models\Comment;
+use App\Models\Article;
 use App\Models\Game;
 use App\Models\GameRating;
-use App\Models\Tip;
 use App\Models\User;
 
 class GetDashboardStats
@@ -14,8 +13,7 @@ class GetDashboardStats
      * @return array{
      *     games: array{total: int, rated_total: int},
      *     ratings: array{total: int, average: float|null},
-     *     comments: array{approved_total: int},
-     *     tips: array{approved_total: int},
+     *     articles: array{published_total: int, premium_total: int},
      *     users: array{total: int},
      * }
      */
@@ -38,11 +36,9 @@ class GetDashboardStats
                 'total' => $ratingsCount,
                 'average' => $ratingsAverage,
             ],
-            'comments' => [
-                'approved_total' => Comment::approved()->count(),
-            ],
-            'tips' => [
-                'approved_total' => Tip::approved()->count(),
+            'articles' => [
+                'published_total' => Article::published()->count(),
+                'premium_total' => Article::published()->where('is_premium', true)->count(),
             ],
             'users' => [
                 'total' => User::count(),
@@ -50,4 +46,3 @@ class GetDashboardStats
         ];
     }
 }
-

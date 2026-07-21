@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Settings\PasswordController;
 use App\Http\Controllers\Settings\ProfileController;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
@@ -14,6 +15,16 @@ Route::middleware('auth')->group(function () {
 
     Route::get('settings/password', [PasswordController::class, 'edit'])->name('password.edit');
     Route::put('settings/password', [PasswordController::class, 'update'])->name('password.update');
+
+    Route::get('settings/security', function (Request $request) {
+        $user = $request->user();
+
+        return Inertia::render('settings/Security', [
+            'passwordConfirmed' => time() - (int) $request->session()->get('auth.password_confirmed_at', 0) < config('auth.password_timeout', 10800),
+            'twoFactorEnabled' => ! is_null($user->two_factor_secret),
+            'twoFactorConfirmed' => ! is_null($user->two_factor_confirmed_at),
+        ]);
+    })->name('settings.security');
 
     Route::get('settings/appearance', function () {
         return Inertia::render('settings/Appearance');

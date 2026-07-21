@@ -20,7 +20,11 @@ const { isActive } = useActiveLink();
                     as-child :is-active="item.isActive ?? isActive(item.href)"
                     :tooltip="item.title"
                 >
-                    <Link :href="item.href">
+                    <a v-if="item.href === '/telescope'" :href="item.href">
+                        <component :is="item.icon" />
+                        <span>{{ item.title }}</span>
+                    </a>
+                    <Link v-else :href="item.href">
                         <component :is="item.icon" />
                         <span>{{ item.title }}</span>
                     </Link>

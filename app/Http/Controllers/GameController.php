@@ -3,11 +3,8 @@
 namespace App\Http\Controllers;
 
 use App\Jobs\TranslateGameTexts;
-use App\Models\Comment;
-use App\Models\CommentReaction;
+use App\Models\Article;
 use App\Models\Game;
-use App\Models\Tip;
-use App\Models\TipReaction;
 use App\Services\IGDBService;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Request;
@@ -134,94 +131,24 @@ class GameController extends Controller
                 ->value('rating');
         }
 
-        $commentsQuery = $game->comments()
-            ->approved()
-            ->with('user:id,username,display_name_color,display_alias,profile_border_style')
-            ->withCount([
-                'reactions as likes_count' => fn ($query) => $query->where('reaction', CommentReaction::LIKE),
-                'reactions as dislikes_count' => fn ($query) => $query->where('reaction', CommentReaction::DISLIKE),
-            ])
+        $articles = $game->articles()
+            ->published()
+            ->with('author:id,name,username')
+            ->withCount('reactions')
             ->latest();
 
-        if ($requestUser) {
-            $commentsQuery->with([
-                'reactions' => fn ($query) => $query
-                    ->where('user_id', $requestUser->id)
-                    ->select('id', 'comment_id', 'user_id', 'reaction'),
-            ]);
-        }
-
-        $comments = $commentsQuery->get()->map(function (Comment $comment) use ($requestUser) {
-            $commentUser = $comment->user;
-
-            $userReaction = null;
-
-            if ($requestUser && $comment->relationLoaded('reactions')) {
-                $userReaction = optional($comment->reactions->first())->reaction;
-            }
-
+        $articles = $articles->get()->map(function (Article $article) {
             return [
-                'id' => $comment->id,
-                'content' => $comment->content,
-                'likes_count' => (int) ($comment->likes_count ?? 0),
-                'dislikes_count' => (int) ($comment->dislikes_count ?? 0),
-                'user_reaction' => match ($userReaction) {
-                    CommentReaction::LIKE => 'like',
-                    CommentReaction::DISLIKE => 'dislike',
-                    default => null,
-                },
-                'user' => [
-                    'username' => $commentUser->username,
-                    'display_name_color' => $commentUser->display_name_color,
-                    'display_alias' => $commentUser->display_alias,
-                    'profile_border_style' => $commentUser->profile_border_style,
-                    'is_subscribed' => $commentUser->is_subscribed,
-                ],
-            ];
-        })->values();
-
-        $tipsQuery = $game->tips()
-            ->approved()
-            ->with('user:id,username,display_name_color,display_alias,profile_border_style')
-            ->withCount([
-                'reactions as likes_count' => fn ($query) => $query->where('reaction', TipReaction::LIKE),
-                'reactions as dislikes_count' => fn ($query) => $query->where('reaction', TipReaction::DISLIKE),
-            ])
-            ->latest();
-
-        if ($requestUser) {
-            $tipsQuery->with([
-                'reactions' => fn ($query) => $query
-                    ->where('user_id', $requestUser->id)
-                    ->select('id', 'tip_id', 'user_id', 'reaction'),
-            ]);
-        }
-
-        $tips = $tipsQuery->get()->map(function (Tip $tip) use ($requestUser) {
-            $tipUser = $tip->user;
-
-            $userReaction = null;
-
-            if ($requestUser && $tip->relationLoaded('reactions')) {
-                $userReaction = optional($tip->reactions->first())->reaction;
-            }
-
-            return [
-                'id' => $tip->id,
-                'content' => $tip->content,
-                'likes_count' => (int) ($tip->likes_count ?? 0),
-                'dislikes_count' => (int) ($tip->dislikes_count ?? 0),
-                'user_reaction' => match ($userReaction) {
-                    TipReaction::LIKE => 'like',
-                    TipReaction::DISLIKE => 'dislike',
-                    default => null,
-                },
-                'user' => [
-                    'username' => $tipUser->username,
-                    'display_name_color' => $tipUser->display_name_color,
-                    'display_alias' => $tipUser->display_alias,
-                    'profile_border_style' => $tipUser->profile_border_style,
-                    'is_subscribed' => $tipUser->is_subscribed,
+                'id' => $article->id,
+                'title' => $article->title,
+                'slug' => $article->slug,
+                'excerpt' => Str::limit(strip_tags($article->content), 180),
+                'is_premium' => $article->is_premium,
+                'published_at' => $article->published_at?->toIso8601String(),
+                'reactions_count' => (int) ($article->reactions_count ?? 0),
+                'author' => [
+                    'name' => $article->author->name,
+                    'username' => $article->author->username,
                 ],
             ];
         })->values();
@@ -234,8 +161,7 @@ class GameController extends Controller
                 'summary'     => $texts['summary'],
                 'storyline'   => $texts['storyline'],
                 'description' => $body !== '' ? $body : null,
-                'comments'    => $comments->all(),
-                'tips'        => $tips->all(),
+                'articles'    => $articles->all(),
                 'ratings'     => [
 
                     'enabled' => $hasRatingsTable,
@@ -249,6 +175,7 @@ class GameController extends Controller
                     'user'    => $userRating !== null ? (int) $userRating : null,
                 ],
             ],
+            'canCreateArticle' => (bool) ($requestUser?->is_editor || $requestUser?->is_admin || $requestUser?->is_super_admin),
             'flash' => session('success'),
         ]);
     }
@@ -321,4 +248,3 @@ class GameController extends Controller
         return $imported;
     }
 }
-

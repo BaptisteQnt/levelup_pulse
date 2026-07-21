@@ -62,11 +62,11 @@ const breadcrumbs: BreadcrumbItem[] = [
             </section>
 
             <section class="space-y-4 rounded-xl border border-sidebar-border/70 bg-white/80 p-6 shadow-sm backdrop-blur dark:border-sidebar-border dark:bg-neutral-900/80">
-                <h2 class="text-2xl font-semibold text-neutral-900 dark:text-neutral-100">Contenu généré par les utilisateurs</h2>
+                <h2 class="text-2xl font-semibold text-neutral-900 dark:text-neutral-100">Contenu editorial</h2>
                 <p class="text-neutral-600 dark:text-neutral-300">
-                    Les utilisateurs peuvent publier : Commentaires, Astuces, Notes / évaluations.<br />
-                    L’éditeur se réserve le droit de supprimer tout contenu : illégal, discriminatoire, insultant, diffamatoire ou
-                    contraire aux règles de modération.
+                    Les articles sont rediges par les redacteurs du media. Les utilisateurs peuvent consulter les articles,
+                    noter les jeux et reagir aux publications.<br />
+                    L'editeur se reserve le droit de modifier ou supprimer tout contenu contraire a la loi ou a la ligne editoriale.
                 </p>
                 <p class="text-neutral-600 dark:text-neutral-300">
                     Responsabilité :<br />

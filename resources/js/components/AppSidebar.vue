@@ -5,7 +5,7 @@ import NavUser from '@/components/NavUser.vue';
 import { Sidebar, SidebarContent, SidebarFooter, SidebarHeader, SidebarMenu, SidebarMenuButton, SidebarMenuItem } from '@/components/ui/sidebar';
 import { type NavItem, type SharedData } from '@/types';
 import { Link, usePage } from '@inertiajs/vue3';
-import { LayoutGrid, Megaphone, MessageSquare, ShieldCheck, UserMinus } from 'lucide-vue-next';
+import { LayoutGrid, Megaphone, ScrollText, ShieldCheck, UserMinus } from 'lucide-vue-next';
 import { computed } from 'vue';
 import AppLogo from './AppLogo.vue';
 
@@ -20,12 +20,7 @@ const mainNavItems = computed<NavItem[]>(() => {
         },
     ];
 
-    if (page.props.auth.user?.is_admin) {
-        items.push({
-            title: 'Modération',
-            href: route('admin.moderation.index'),
-            icon: MessageSquare,
-        });
+    if (page.props.auth.user?.is_admin || page.props.auth.user?.is_super_admin) {
         items.push({
             title: 'Pouvoirs',
             href: route('admin.powers.index'),
@@ -40,6 +35,19 @@ const mainNavItems = computed<NavItem[]>(() => {
             title: 'Demandes RGPD',
             href: route('admin.privacy.requests.index'),
             icon: UserMinus,
+        });
+    }
+
+    if (page.props.auth.user?.is_super_admin || page.props.auth.user?.is_security_officer) {
+        items.push({
+            title: 'Journal securite',
+            href: route('security.audit-logs.index'),
+            icon: ScrollText,
+        });
+        items.push({
+            title: 'Telescope',
+            href: '/telescope',
+            icon: ScrollText,
         });
     }
 

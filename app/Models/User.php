@@ -2,18 +2,20 @@
 
 namespace App\Models;
 
-// use Illuminate\Contracts\Auth\MustVerifyEmail;
+use App\Casts\EncryptedInteger;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Laravel\Sanctum\HasApiTokens;
 use Laravel\Cashier\Billable;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Laravel\Fortify\TwoFactorAuthenticatable;
 
-class User extends Authenticatable
+class User extends Authenticatable implements MustVerifyEmail
 {
     /** @use HasFactory<\Database\Factories\UserFactory> */
-    use HasApiTokens, HasFactory, Notifiable, Billable;
+    use HasApiTokens, HasFactory, Notifiable, Billable, TwoFactorAuthenticatable;
 
     /**
      * The accessors that should be appended to the model's array form.
@@ -37,6 +39,9 @@ class User extends Authenticatable
         'age',
         'password',
         'is_admin',
+        'is_editor',
+        'is_super_admin',
+        'is_security_officer',
         'display_name_color',
         'display_alias',
         'profile_border_style',
@@ -50,6 +55,8 @@ class User extends Authenticatable
     protected $hidden = [
         'password',
         'remember_token',
+        'two_factor_recovery_codes',
+        'two_factor_secret',
     ];
 
     /**
@@ -60,15 +67,29 @@ class User extends Authenticatable
     protected function casts(): array
     {
         return [
+            'name' => 'encrypted',
             'email_verified_at' => 'datetime',
+            'two_factor_confirmed_at' => 'datetime',
+            'phone' => 'encrypted',
+            'address' => 'encrypted',
+            'city' => 'encrypted',
+            'cp' => 'encrypted',
+            'country' => 'encrypted',
+            'age' => EncryptedInteger::class,
             'password' => 'hashed',
             'is_admin' => 'boolean',
+            'is_editor' => 'boolean',
+            'is_super_admin' => 'boolean',
+            'is_security_officer' => 'boolean',
+            'display_name_color' => 'encrypted',
+            'display_alias' => 'encrypted',
+            'profile_border_style' => 'encrypted',
         ];
     }
 
-    public function comments()
+    public function articles(): HasMany
     {
-        return $this->hasMany(Comment::class);
+        return $this->hasMany(Article::class);
     }
 
     public function ratings()
@@ -76,19 +97,9 @@ class User extends Authenticatable
         return $this->hasMany(GameRating::class);
     }
 
-    public function tips(): HasMany
+    public function articleReactions(): HasMany
     {
-        return $this->hasMany(Tip::class);
-    }
-
-    public function commentReactions(): HasMany
-    {
-        return $this->hasMany(CommentReaction::class);
-    }
-
-    public function tipReactions(): HasMany
-    {
-        return $this->hasMany(TipReaction::class);
+        return $this->hasMany(ArticleReaction::class);
     }
 
     public function oauthAccounts()

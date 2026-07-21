@@ -105,7 +105,7 @@ const formatDate = (value: string | null) =>
                     <li>Compte : identifiants, mot de passe haché, pseudo public, préférences de profil.</li>
                     <li>Abonnement et paiement : historique d'abonnement Premium, transactions gérées par Stripe (aucune donnée bancaire n'est stockée sur LevelUp).</li>
                     <li>Navigation et audience : adresse IP, traces techniques, cookies nécessaires, mesures d'audience (Google Analytics, Microsoft Clarity) selon vos choix.</li>
-                    <li>Contenus partagés : commentaires, notes, astuces et contributions publiées sur la plateforme.</li>
+                    <li>Contenus et interactions : notes, reactions aux articles et contributions publiees par les redacteurs.</li>
                 </ul>
             </section>
 
@@ -117,7 +117,7 @@ const formatDate = (value: string | null) =>
                         <ul class="mt-2 list-disc space-y-2 pl-4">
                             <li>Création et gestion des comptes utilisateurs.</li>
                             <li>Accès aux fonctionnalités Premium et personnalisation du profil.</li>
-                            <li>Modération des contributions publiques.</li>
+                            <li>Gestion editoriale des articles et prevention des abus.</li>
                         </ul>
                         <p class="mt-3 text-sm text-neutral-600 dark:text-neutral-300">Base légale : exécution du contrat et intérêt légitime de sécuriser la plateforme.</p>
                     </div>
@@ -156,7 +156,7 @@ const formatDate = (value: string | null) =>
                     <li>Données de compte : conservées tant que le compte est actif, puis supprimées ou anonymisées sur demande.</li>
                     <li>Données de facturation : conservées conformément aux obligations comptables et fiscales applicables.</li>
                     <li>Cookies analytiques : durée maximale de 13 mois selon vos préférences de consentement.</li>
-                    <li>Contenus publiés : conservés tant qu'ils restent en ligne ou jusqu'à suppression/modération.</li>
+                    <li>Contenus publies : conserves tant qu'ils restent en ligne ou jusqu'a suppression editoriale.</li>
                 </ul>
             </section>
 
@@ -166,7 +166,7 @@ const formatDate = (value: string | null) =>
                     <li>Stripe Payments Europe Ltd. pour le traitement sécurisé des paiements (LevelUp ne stocke pas vos données bancaires).</li>
                     <li>Outils d'analyse (Google Analytics, Microsoft Clarity) activés uniquement après consentement.</li>
                     <li>Hébergeur Hostinger International Ltd. pour la conservation des données applicatives.</li>
-                    <li>Équipe de modération LevelUp, dans le cadre de la lutte contre les abus et la conformité communautaire.</li>
+                    <li>Equipe editoriale LevelUp, dans le cadre de la lutte contre les abus et de la conformite du media.</li>
                 </ul>
             </section>
 

@@ -76,7 +76,7 @@ const closeMobileMenu = () => {
 };
 
 const adminNavItems = computed<NavItem[]>(() => {
-    if (!page.props.auth.user?.is_admin) {
+    if (!page.props.auth.user?.is_admin && !page.props.auth.user?.is_super_admin) {
         return [];
     }
 
@@ -84,10 +84,6 @@ const adminNavItems = computed<NavItem[]>(() => {
         {
             title: 'Dashboard',
             href: route('dashboard'),
-        },
-        {
-            title: 'Modération',
-            href: route('admin.moderation.index'),
         },
         {
             title: 'Pouvoirs',
@@ -100,6 +96,23 @@ const adminNavItems = computed<NavItem[]>(() => {
         {
             title: 'Demandes RGPD',
             href: route('admin.privacy.requests.index'),
+        },
+    ];
+});
+
+const securityNavItems = computed<NavItem[]>(() => {
+    if (!page.props.auth.user?.is_super_admin && !page.props.auth.user?.is_security_officer) {
+        return [];
+    }
+
+    return [
+        {
+            title: 'Journal securite',
+            href: route('security.audit-logs.index'),
+        },
+        {
+            title: 'Telescope',
+            href: '/telescope',
         },
     ];
 });
@@ -165,6 +178,29 @@ const adminNavItems = computed<NavItem[]>(() => {
                             <DropdownMenuSeparator />
                             <DropdownMenuItem v-for="item in adminNavItems" :key="item.title" :as-child="true">
                                 <Link :href="item.href" class="flex items-center justify-between gap-2">
+                                    <span>{{ item.title }}</span>
+                                </Link>
+                            </DropdownMenuItem>
+                        </DropdownMenuContent>
+                    </DropdownMenu>
+                    <DropdownMenu v-if="securityNavItems.length">
+                        <DropdownMenuTrigger as-child>
+                            <button
+                                type="button"
+                                class="inline-flex items-center gap-2 rounded-lg border border-white/70 px-3 py-2 font-semibold text-white transition hover:border-white hover:bg-white/10 focus:outline-none focus:ring-2 focus:ring-primary"
+                            >
+                                <span>Securite</span>
+                                <ChevronDown class="h-4 w-4" />
+                            </button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent class="min-w-56" align="end" :side-offset="12">
+                            <DropdownMenuLabel>Acces securite</DropdownMenuLabel>
+                            <DropdownMenuSeparator />
+                            <DropdownMenuItem v-for="item in securityNavItems" :key="item.title" :as-child="true">
+                                <a v-if="item.href === '/telescope'" :href="item.href" class="flex items-center justify-between gap-2">
+                                    <span>{{ item.title }}</span>
+                                </a>
+                                <Link v-else :href="item.href" class="flex items-center justify-between gap-2">
                                     <span>{{ item.title }}</span>
                                 </Link>
                             </DropdownMenuItem>
@@ -267,6 +303,29 @@ const adminNavItems = computed<NavItem[]>(() => {
                         >
                             {{ item.title }}
                         </Link>
+                    </div>
+                </div>
+                <div v-if="securityNavItems.length" class="rounded-lg border border-white/40 p-3 text-white">
+                    <p class="text-sm font-semibold text-white">Securite</p>
+                    <div class="mt-2 flex flex-col gap-2">
+                        <template v-for="item in securityNavItems" :key="`mobile-security-${item.title}`">
+                            <a
+                                v-if="item.href === '/telescope'"
+                                :href="item.href"
+                                class="rounded-md px-3 py-2 text-sm transition hover:bg-[#0E6BA8]/20 dark:hover:bg-white/10"
+                                @click="closeMobileMenu"
+                            >
+                                {{ item.title }}
+                            </a>
+                            <Link
+                                v-else
+                                :href="item.href"
+                                class="rounded-md px-3 py-2 text-sm transition hover:bg-[#0E6BA8]/20 dark:hover:bg-white/10"
+                                @click="closeMobileMenu"
+                            >
+                                {{ item.title }}
+                            </Link>
+                        </template>
                     </div>
                 </div>
             </div>

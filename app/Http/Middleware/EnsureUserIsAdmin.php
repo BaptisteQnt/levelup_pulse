@@ -12,7 +12,7 @@ class EnsureUserIsAdmin
     {
         $user = $request->user();
 
-        if (! $user || ! $user->is_admin) {
+        if (! $user || (! $user->is_admin && ! $user->is_super_admin)) {
             abort(403, 'Cette section est réservée aux administrateurs.');
         }
 

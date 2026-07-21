@@ -19,14 +19,9 @@ class Game extends Model
         'storyline',
     ];
 
-    public function comments()
+    public function articles()
     {
-        return $this->hasMany(Comment::class);
-    }
-
-    public function tips()
-    {
-        return $this->hasMany(Tip::class);
+        return $this->hasMany(Article::class);
     }
 
     public function ratings()
@@ -80,5 +75,4 @@ class Game extends Model
     }
 
 }
-
 

@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\Announcement;
+use App\Services\AuditLogger;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -19,44 +20,56 @@ class AnnouncementController extends Controller
             ->orderByDesc('created_at')
             ->get()
             ->map(fn (Announcement $announcement) => [
-                'id'           => $announcement->id,
-                'title'        => $announcement->title,
-                'content'      => $announcement->content,
+                'id' => $announcement->id,
+                'title' => $announcement->title,
+                'content' => $announcement->content,
                 'published_at' => $announcement->published_at?->toIso8601String(),
-                'created_at'   => $announcement->created_at?->toIso8601String(),
-                'author'       => $announcement->user?->only(['id', 'name', 'username']),
+                'created_at' => $announcement->created_at?->toIso8601String(),
+                'author' => $announcement->user?->only(['id', 'name', 'username']),
             ]);
 
         return Inertia::render('admin/Announcements', [
             'announcements' => $announcements,
             'flash' => [
                 'success' => $request->session()->get('success'),
-                'error'   => $request->session()->get('error'),
+                'error' => $request->session()->get('error'),
             ],
         ]);
     }
 
-    public function store(Request $request): RedirectResponse
+    public function store(Request $request, AuditLogger $auditLogger): RedirectResponse
     {
         $validated = $request->validate([
-            'title'   => ['required', 'string', 'max:255'],
+            'title' => ['required', 'string', 'max:255'],
             'content' => ['required', 'string'],
         ]);
 
-        Announcement::create([
-            'user_id'      => $request->user()->id,
-            'title'        => $validated['title'],
-            'content'      => $validated['content'],
+        $announcement = Announcement::create([
+            'user_id' => $request->user()->id,
+            'title' => $validated['title'],
+            'content' => $validated['content'],
             'published_at' => now(),
         ]);
 
-        return redirect()->route('admin.announcements.index')->with('success', 'Annonce publiée avec succès.');
+        $auditLogger->log($request, 'announcement.created', $announcement, [
+            'title' => $announcement->title,
+        ]);
+
+        return redirect()
+            ->route('admin.announcements.index')
+            ->with('success', 'Annonce publiee avec succes.');
     }
 
-    public function destroy(Announcement $announcement): RedirectResponse
+    public function destroy(Request $request, Announcement $announcement, AuditLogger $auditLogger): RedirectResponse
     {
+        $auditLogger->log($request, 'announcement.deleted', $announcement, [
+            'title' => $announcement->title,
+        ]);
+
         $announcement->delete();
 
-        return redirect()->route('admin.announcements.index')->with('success', 'Annonce supprimée.');
+        return redirect()
+            ->route('admin.announcements.index')
+            ->with('success', 'Annonce supprimee.');
     }
 }

@@ -20,6 +20,8 @@ class DataErasureRequest extends Model
     ];
 
     protected $casts = [
+        'details' => 'encrypted',
+        'admin_notes' => 'encrypted',
         'resolved_at' => 'datetime',
     ];
 

@@ -2,10 +2,9 @@
 
 namespace Tests\Feature\Api;
 
-use App\Models\Comment;
+use App\Models\Article;
 use App\Models\Game;
 use App\Models\GameRating;
-use App\Models\Tip;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Laravel\Sanctum\Sanctum;
@@ -39,12 +38,9 @@ class StatsTest extends TestCase
         GameRating::factory()->for($gameA, 'game')->for($anotherUser, 'user')->create(['rating' => 6]);
         GameRating::factory()->for($gameB, 'game')->for($user, 'user')->create(['rating' => 7]);
 
-        Comment::factory()->for($gameA, 'game')->for($user, 'user')->create();
-        Comment::factory()->for($gameB, 'game')->for($anotherUser, 'user')->create();
-        Comment::factory()->for($gameA, 'game')->for($user, 'user')->create(['is_approved' => false]);
-
-        Tip::factory()->for($gameA, 'game')->for($user, 'user')->create();
-        Tip::factory()->for($gameB, 'game')->for($anotherUser, 'user')->create(['is_approved' => false]);
+        Article::factory()->for($gameA, 'game')->for($user, 'author')->create();
+        Article::factory()->for($gameB, 'game')->for($anotherUser, 'author')->create(['is_premium' => true]);
+        Article::factory()->for($gameA, 'game')->for($user, 'author')->create(['published_at' => now()->addDay()]);
 
         Sanctum::actingAs($user);
 
@@ -61,11 +57,9 @@ class StatsTest extends TestCase
                     'total' => 3,
                     'average' => 7.0,
                 ],
-                'comments' => [
-                    'approved_total' => 2,
-                ],
-                'tips' => [
-                    'approved_total' => 1,
+                'articles' => [
+                    'published_total' => 2,
+                    'premium_total' => 1,
                 ],
                 'users' => [
                     'total' => 2,

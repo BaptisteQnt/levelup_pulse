@@ -60,6 +60,9 @@ export interface User {
     created_at: string;
     updated_at: string;
     is_admin: boolean;
+    is_editor: boolean;
+    is_super_admin: boolean;
+    is_security_officer: boolean;
 }
 
 export type BreadcrumbItemType = BreadcrumbItem;

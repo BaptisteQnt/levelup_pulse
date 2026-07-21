@@ -1,22 +1,21 @@
 <?php
 
 use App\Actions\Dashboard\GetDashboardStats;
+use App\Http\Controllers\ArticleController;
+use App\Http\Controllers\ArticleReactionController;
+use App\Http\Controllers\Security\AuditLogController;
 use App\Http\Controllers\UserProfileController;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 use App\Http\Controllers\GameController;
 use App\Http\Controllers\Admin\AnnouncementController;
-use App\Http\Controllers\Admin\ModerationController;
 use App\Http\Controllers\Admin\PowersController;
 use App\Http\Controllers\GameRatingController;
-use App\Http\Controllers\CommentController;
-use App\Http\Controllers\CommentReactionController;
 use App\Http\Controllers\SubscriptionController;
-use App\Http\Controllers\TipController;
-use App\Http\Controllers\TipReactionController;
 use Laravel\Cashier\Http\Controllers\WebhookController;
 use Illuminate\Http\Request;
 use App\Models\Announcement;
+use App\Models\Article;
 use App\Models\Game;
 use App\Http\Controllers\LegalController;
 use App\Http\Controllers\DataErasureRequestController;
@@ -52,6 +51,31 @@ $dashboardPage = function (Request $request) {
         ->values()
         ->all();
 
+    $latestArticles = Article::query()
+        ->published()
+        ->with(['game:id,title,slug', 'author:id,name,username'])
+        ->latest('published_at')
+        ->take(5)
+        ->get()
+        ->map(fn (Article $article) => [
+            'id' => $article->id,
+            'title' => $article->title,
+            'slug' => $article->slug,
+            'excerpt' => \Illuminate\Support\Str::limit(strip_tags($article->content), 150),
+            'is_premium' => $article->is_premium,
+            'published_at' => $article->published_at?->toIso8601String(),
+            'game' => [
+                'title' => $article->game->title,
+                'slug' => $article->game->slug,
+            ],
+            'author' => [
+                'name' => $article->author->name,
+                'username' => $article->author->username,
+            ],
+        ])
+        ->values()
+        ->all();
+
     $stats = app(GetDashboardStats::class)->handle();
 
     return Inertia::render('Dashboard', [
@@ -66,6 +90,7 @@ $dashboardPage = function (Request $request) {
             'author'       => $announcement->user?->only(['id', 'name', 'username']),
         ] : null,
         'recentGames'   => $recentGames,
+        'latestArticles' => $latestArticles,
         'stats'         => $stats,
     ]);
 };
@@ -78,19 +103,21 @@ Route::middleware('auth')->group(function () {
     Route::get('/games', [GameController::class, 'index'])->name('games.index');
     Route::get('/games/{slug}', [GameController::class, 'show'])->name('games.show');
     Route::post('/games/{game}/rating', [GameRatingController::class, 'store'])->name('games.rating.store');
+    Route::get('/articles/{article:slug}', [ArticleController::class, 'show'])->name('articles.show');
+    Route::post('/articles/{article:slug}/react', [ArticleReactionController::class, 'store'])->name('articles.react');
 });
-Route::middleware('auth')->delete('/comments/{comment}', [CommentController::class, 'destroy'])->name('comments.destroy');
-Route::middleware('auth')->post('/comments/{comment}/react', [CommentReactionController::class, 'store'])->name('comments.react');
-Route::middleware('auth')->post('/tips', [TipController::class, 'store'])->name('tips.store');
-Route::middleware('auth')->delete('/tips/{tip}', [TipController::class, 'destroy'])->name('tips.destroy');
-Route::middleware('auth')->post('/tips/{tip}/react', [TipReactionController::class, 'store'])->name('tips.react');
+
+Route::middleware(['auth', 'editor'])->group(function () {
+    Route::get('/games/{game}/articles/create', [ArticleController::class, 'create'])->name('articles.create');
+    Route::post('/games/{game}/articles', [ArticleController::class, 'store'])->name('articles.store');
+    Route::get('/articles/{article:slug}/edit', [ArticleController::class, 'edit'])->name('articles.edit');
+    Route::patch('/articles/{article:slug}', [ArticleController::class, 'update'])->name('articles.update');
+    Route::delete('/articles/{article:slug}', [ArticleController::class, 'destroy'])->name('articles.destroy');
+});
 
 Route::middleware(['auth', 'admin'])->group(function () {
-    Route::get('/admin/moderation', ModerationController::class)->name('admin.moderation.index');
     Route::get('/admin/powers', [PowersController::class, 'index'])->name('admin.powers.index');
     Route::patch('/admin/powers/{user}', [PowersController::class, 'update'])->name('admin.powers.update');
-    Route::patch('/admin/comments/{comment}/approve', [CommentController::class, 'approve'])->name('admin.comments.approve');
-    Route::patch('/admin/tips/{tip}/approve', [TipController::class, 'approve'])->name('admin.tips.approve');
     Route::get('/admin/announcements', [AnnouncementController::class, 'index'])->name('admin.announcements.index');
     Route::post('/admin/announcements', [AnnouncementController::class, 'store'])->name('admin.announcements.store');
     Route::delete('/admin/announcements/{announcement}', [AnnouncementController::class, 'destroy'])->name('admin.announcements.destroy');
@@ -98,6 +125,10 @@ Route::middleware(['auth', 'admin'])->group(function () {
     Route::patch('/admin/privacy/requests/{dataErasureRequest}', [AdminDataErasureRequestController::class, 'update'])->name('admin.privacy.requests.update');
     Route::post('/admin/privacy/requests/{dataErasureRequest}/account/delete', [AdminDataErasureRequestController::class, 'destroyAccount'])->name('admin.privacy.requests.destroy-account');
     Route::post('/admin/privacy/requests/{dataErasureRequest}/data/anonymize', [AdminDataErasureRequestController::class, 'erasePersonalData'])->name('admin.privacy.requests.erase-data');
+});
+
+Route::middleware(['auth', 'security'])->group(function () {
+    Route::get('/security/audit-logs', [AuditLogController::class, 'index'])->name('security.audit-logs.index');
 });
 
 use App\Http\Controllers\Auth\SocialiteController;
@@ -113,8 +144,6 @@ Route::get('/auth/{provider}/callback', [SocialiteController::class, 'callback']
 
 
 Route::get('/users/{username}', [UserProfileController::class, 'show'])->name('users.show');
-
-Route::middleware('auth')->post('/comments', [CommentController::class, 'store'])->name('comments.store');
 
 // Pages plans/checkout/portal protégées pour utilisateurs connectés
 Route::middleware(['auth','verified','profile.complete'])->group(function () {

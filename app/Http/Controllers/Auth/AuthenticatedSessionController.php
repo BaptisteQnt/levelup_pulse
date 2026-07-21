@@ -8,6 +8,7 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
+use Laravel\Fortify\TwoFactorAuthenticatable;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -31,6 +32,19 @@ class AuthenticatedSessionController extends Controller
     {
         $request->authenticate();
 
+        $user = $request->user();
+
+        if ($user && $this->requiresTwoFactorAuthentication($user)) {
+            Auth::guard('web')->logout();
+
+            $request->session()->put([
+                'login.id' => $user->getKey(),
+                'login.remember' => $request->boolean('remember'),
+            ]);
+
+            return redirect()->route('two-factor.login');
+        }
+
         $request->session()->regenerate();
 
         return redirect()->intended(route('dashboard', absolute: false));
@@ -47,5 +61,12 @@ class AuthenticatedSessionController extends Controller
         $request->session()->regenerateToken();
 
         return redirect('/');
+    }
+
+    private function requiresTwoFactorAuthentication(mixed $user): bool
+    {
+        return ! is_null($user->two_factor_secret)
+            && ! is_null($user->two_factor_confirmed_at)
+            && in_array(TwoFactorAuthenticatable::class, class_uses_recursive($user));
     }
 }

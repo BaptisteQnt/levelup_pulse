@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\DataErasureRequest;
+use App\Services\AuditLogger;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -48,7 +49,7 @@ class DataErasureRequestController extends Controller
         ]);
     }
 
-    public function update(Request $request, DataErasureRequest $dataErasureRequest): RedirectResponse
+    public function update(Request $request, DataErasureRequest $dataErasureRequest, AuditLogger $auditLogger): RedirectResponse
     {
         $validated = $request->validate([
             'status'      => ['required', Rule::in(['pending', 'in_progress', 'resolved'])],
@@ -68,12 +69,17 @@ class DataErasureRequestController extends Controller
 
         $dataErasureRequest->save();
 
+        $auditLogger->log($request, 'privacy_request.updated', $dataErasureRequest, [
+            'request_type' => $dataErasureRequest->request_type,
+            'status' => $dataErasureRequest->status,
+        ], $dataErasureRequest->user);
+
         return redirect()
             ->back()
             ->with('success', 'La demande a été mise à jour.');
     }
 
-    public function destroyAccount(DataErasureRequest $dataErasureRequest): RedirectResponse
+    public function destroyAccount(Request $request, DataErasureRequest $dataErasureRequest, AuditLogger $auditLogger): RedirectResponse
     {
         if ($dataErasureRequest->request_type !== 'account_deletion') {
             return redirect()
@@ -89,7 +95,13 @@ class DataErasureRequestController extends Controller
                 ->with('error', 'Le compte associé à cette demande a déjà été supprimé.');
         }
 
-        DB::transaction(function () use ($user, $dataErasureRequest) {
+        DB::transaction(function () use ($request, $user, $dataErasureRequest, $auditLogger) {
+            $auditLogger->log($request, 'privacy_request.account_deleted', $dataErasureRequest, [
+                'request_type' => $dataErasureRequest->request_type,
+                'target_username' => $user->username,
+                'target_email' => $user->email,
+            ], $user);
+
             $dataErasureRequest->forceFill([
                 'status'      => 'resolved',
                 'resolved_at' => now(),
@@ -127,7 +139,7 @@ class DataErasureRequestController extends Controller
             ->with('success', 'Le compte utilisateur a été supprimé et la demande est clôturée.');
     }
 
-    public function erasePersonalData(DataErasureRequest $dataErasureRequest): RedirectResponse
+    public function erasePersonalData(Request $request, DataErasureRequest $dataErasureRequest, AuditLogger $auditLogger): RedirectResponse
     {
         if ($dataErasureRequest->request_type !== 'data_deletion') {
             return redirect()
@@ -145,7 +157,14 @@ class DataErasureRequestController extends Controller
 
         $identifier = Str::uuid()->toString();
 
-        DB::transaction(function () use ($user, $dataErasureRequest, $identifier) {
+        DB::transaction(function () use ($request, $user, $dataErasureRequest, $identifier, $auditLogger) {
+            $auditLogger->log($request, 'privacy_request.personal_data_erased', $dataErasureRequest, [
+                'request_type' => $dataErasureRequest->request_type,
+                'target_username_before' => $user->username,
+                'target_email_before' => $user->email,
+                'anonymized_username' => 'anon-'.$identifier,
+            ], $user);
+
             $user->forceFill([
                 'name'                  => 'Compte anonymisé',
                 'username'              => 'anon-'.$identifier,

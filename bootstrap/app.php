@@ -1,6 +1,8 @@
 <?php
 
 use App\Http\Middleware\EnsureUserIsAdmin;
+use App\Http\Middleware\EnsureUserCanAccessSecurity;
+use App\Http\Middleware\EnsureUserIsEditor;
 use App\Http\Middleware\EnsureProfileIsComplete;
 use App\Http\Middleware\HandleAppearance;
 use App\Http\Middleware\HandleInertiaRequests;
@@ -43,6 +45,8 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->alias([
             'subscribed' => \App\Http\Middleware\EnsureUserIsSubscribed::class,
             'admin' => EnsureUserIsAdmin::class,
+            'editor' => EnsureUserIsEditor::class,
+            'security' => EnsureUserCanAccessSecurity::class,
             'profile.complete' => \App\Http\Middleware\EnsureProfileIsComplete::class,
         ]);
     })

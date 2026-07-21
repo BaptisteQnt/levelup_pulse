@@ -15,8 +15,14 @@ class ConfirmablePasswordController extends Controller
     /**
      * Show the confirm password page.
      */
-    public function show(): Response
+    public function show(Request $request): Response
     {
+        $returnTo = $request->query('return_to');
+
+        if (is_string($returnTo) && str_starts_with($returnTo, '/') && ! str_starts_with($returnTo, '//')) {
+            $request->session()->put('url.intended', $returnTo);
+        }
+
         return Inertia::render('auth/ConfirmPassword');
     }
 
