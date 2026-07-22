@@ -53,3 +53,22 @@ jobs:
 
       - name: Tests
         run: ./vendor/bin/pest
+
+  powershell:
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Validate compatibility scanner syntax
+        shell: pwsh
+        run: |
+          $tokens = $null
+          $parseErrors = $null
+          $scriptPath = Resolve-Path 'resources/scripts/levelup-pc-scan.ps1'
+          [System.Management.Automation.Language.Parser]::ParseFile($scriptPath, [ref]$tokens, [ref]$parseErrors) | Out-Null
+          if ($parseErrors.Count -gt 0) {
+              $parseErrors | Format-List
+              exit 1
+          }

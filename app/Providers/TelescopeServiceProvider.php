@@ -55,6 +55,7 @@ class TelescopeServiceProvider extends TelescopeApplicationServiceProvider
             'cookie',
             'x-csrf-token',
             'x-xsrf-token',
+            'x-levelup-scan-token',
             'php-auth-pw',
         ]);
     }

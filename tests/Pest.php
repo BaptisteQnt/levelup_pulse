@@ -13,7 +13,7 @@
 
 pest()->extend(Tests\TestCase::class)
  // ->use(Illuminate\Foundation\Testing\RefreshDatabase::class)
-    ->in('Feature');
+    ->in('Feature', 'Unit');
 
 /*
 |--------------------------------------------------------------------------
@@ -44,4 +44,44 @@ expect()->extend('toBeOne', function () {
 function something()
 {
     // ..
+}
+
+function compatibilityHardwarePayload(): array
+{
+    return [
+        'schema_version' => 1,
+        'collected_at' => now()->toIso8601String(),
+        'os' => [
+            'caption' => 'Microsoft Windows 11 Pro',
+            'version' => '10.0.26100',
+            'architecture' => '64-bit',
+            'directx_version' => '4.09.00.0904',
+        ],
+        'cpu' => [[
+            'name' => 'AMD Ryzen 5 5600X',
+            'cores' => 6,
+            'logical_processors' => 12,
+            'max_clock_mhz' => 4600,
+        ]],
+        'gpu' => [[
+            'name' => 'NVIDIA GeForce RTX 3060',
+            'vram_bytes' => 12_884_901_888,
+            'vram_is_estimate' => true,
+            'driver_version' => '32.0.15.6094',
+        ]],
+        'memory' => ['total_bytes' => 17_179_869_184],
+        'storage' => [
+            'volumes' => [[
+                'drive' => 'C:',
+                'filesystem' => 'NTFS',
+                'total_bytes' => 1_000_000_000_000,
+                'free_bytes' => 500_000_000_000,
+            ]],
+            'physical_disks' => [[
+                'model' => 'NVMe SSD',
+                'media_type' => 'SSD',
+                'total_bytes' => 1_000_000_000_000,
+            ]],
+        ],
+    ];
 }
