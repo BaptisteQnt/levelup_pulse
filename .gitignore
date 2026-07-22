@@ -23,3 +23,27 @@ yarn-error.log
 /.vscode
 /.zed
 .twitch
+# Deployer
+.deployer/
+.dep/
+
+# Logs
+*.log
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Temporary
+*.swp
+*.swo
+
+# Secrets
+.env.local
+.env.staging
+.env.testing
+
+# Laravel Herd
+.herd
+# Keep the example environment
+!.env.example
