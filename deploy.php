@@ -25,6 +25,7 @@ set('composer_options', '--no-dev --prefer-dist --no-interaction --optimize-auto
 
 set('shared_files', [
     '.env',
+    '.twitch',
 ]);
 
 set('shared_dirs', [
