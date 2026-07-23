@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import AppHeaderLayout from '@/layouts/app/AppHeaderLayout.vue';
+import { gameCoverUrl } from '@/lib/game-images';
 import { type BreadcrumbItem } from '@/types';
 
 import { Head, Link as InertiaLink, router, usePage } from '@inertiajs/vue3';
@@ -63,13 +64,11 @@ const languages: LanguageOption[] = [
     { value: 'en', label: 'English', flag: '🇬🇧' },
 ];
 
-
 const page = usePage<{ activeLanguage?: LanguageCode; searchQuery?: string | null }>();
 
 const selectedLanguage = ref<LanguageCode>(page.props.activeLanguage ?? 'en');
 const searchTerm = ref(props.searchQuery ?? '');
 const isSearching = ref(false);
-
 
 onMounted(() => {
     if (typeof window === 'undefined') {
@@ -79,7 +78,6 @@ onMounted(() => {
     const storedLanguage = window.localStorage.getItem('levelup_language');
 
     if (storedLanguage === 'fr' || storedLanguage === 'en') {
-
         if (storedLanguage !== selectedLanguage.value) {
             selectedLanguage.value = storedLanguage;
         }
@@ -93,27 +91,28 @@ watch(selectedLanguage, (language, previousLanguage) => {
         return;
     }
 
-
     if (typeof window === 'undefined') {
         return;
     }
 
     window.localStorage.setItem('levelup_language', language);
 
-
     if (page.props.activeLanguage === language) {
         return;
     }
 
-    router.visit(route('games.index', {
-        lang: language,
-        search: searchTerm.value.trim() === '' ? undefined : searchTerm.value.trim(),
-    }), {
-        preserveState: true,
-        preserveScroll: true,
-        replace: true,
-        only: ['games', 'activeLanguage', 'searchQuery', 'searchMessage'],
-    });
+    router.visit(
+        route('games.index', {
+            lang: language,
+            search: searchTerm.value.trim() === '' ? undefined : searchTerm.value.trim(),
+        }),
+        {
+            preserveState: true,
+            preserveScroll: true,
+            replace: true,
+            only: ['games', 'activeLanguage', 'searchQuery', 'searchMessage'],
+        },
+    );
 });
 
 watch(
@@ -124,9 +123,8 @@ watch(
         }
 
         selectedLanguage.value = language;
-    }
+    },
 );
-
 
 const selectedLanguageConfig = computed(() => {
     return languages.find((language) => language.value === selectedLanguage.value) ?? languages[0];
@@ -162,7 +160,7 @@ watch(
         }
 
         searchTerm.value = value ?? '';
-    }
+    },
 );
 
 const submitSearch = () => {
@@ -188,7 +186,7 @@ const submitSearch = () => {
             onFinish: () => {
                 isSearching.value = false;
             },
-        }
+        },
     );
 };
 
@@ -215,7 +213,7 @@ const clearSearch = () => {
                         <span class="text-2xl leading-none" aria-hidden="true">{{ selectedLanguageConfig.flag }}</span>
                         <select
                             v-model="selectedLanguage"
-                            class="rounded-lg border border-[#0E6BA8] bg-white px-3 py-2 text-sm font-medium text-[#0E6BA8] shadow-sm focus:border-[#0E6BA8] focus:outline-none focus:ring-2 focus:ring-[#0E6BA8]/60 dark:border-[#A6E1FA] dark:bg-[#001C55] dark:text-white"
+                            class="rounded-lg border border-[#0E6BA8] bg-white px-3 py-2 text-sm font-medium text-[#0E6BA8] shadow-sm focus:border-[#0E6BA8] focus:ring-2 focus:ring-[#0E6BA8]/60 focus:outline-none dark:border-[#A6E1FA] dark:bg-[#001C55] dark:text-white"
                             :aria-label="pageText.languageLabel"
                         >
                             <option v-for="language in languages" :key="language.value" :value="language.value">
@@ -235,13 +233,13 @@ const clearSearch = () => {
                     type="search"
                     name="search"
                     :placeholder="selectedLanguage.value === 'fr' ? 'Rechercher un jeu…' : 'Search a game…'"
-                    class="flex-1 rounded-lg border border-[#0E6BA8] bg-white px-3 py-2 text-sm text-[#0E6BA8] shadow-sm focus:border-[#0E6BA8] focus:outline-none focus:ring-2 focus:ring-[#0E6BA8]/60 dark:border-[#A6E1FA] dark:bg-[#001C55] dark:text-white"
+                    class="flex-1 rounded-lg border border-[#0E6BA8] bg-white px-3 py-2 text-sm text-[#0E6BA8] shadow-sm focus:border-[#0E6BA8] focus:ring-2 focus:ring-[#0E6BA8]/60 focus:outline-none dark:border-[#A6E1FA] dark:bg-[#001C55] dark:text-white"
                     :disabled="isSearching"
                 />
                 <div class="flex items-center gap-2">
                     <button
                         type="submit"
-                        class="inline-flex items-center rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-white shadow transition hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-70"
+                        class="bg-primary hover:bg-primary/90 inline-flex items-center rounded-lg px-4 py-2 text-sm font-semibold text-white shadow transition disabled:cursor-not-allowed disabled:opacity-70"
                         :disabled="isSearching"
                     >
                         {{ selectedLanguage.value === 'fr' ? 'Rechercher' : 'Search' }}
@@ -267,18 +265,16 @@ const clearSearch = () => {
                 v-else-if="hasActiveSearch && games.data.length === 0"
                 class="mb-6 rounded-lg border border-dashed border-[#0E6BA8]/60 px-4 py-3 text-sm text-[#0E6BA8] dark:border-[#A6E1FA]/60 dark:text-white"
             >
-                {{ selectedLanguage.value === 'fr' ? 'Aucun jeu ne correspond à votre recherche pour le moment.' : 'No game matches your search yet.' }}
+                {{
+                    selectedLanguage.value === 'fr' ? 'Aucun jeu ne correspond à votre recherche pour le moment.' : 'No game matches your search yet.'
+                }}
             </p>
 
             <div class="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
-                <div
-                    v-for="game in games.data"
-                    :key="game.id"
-                    class="flex h-full flex-col rounded-lg bg-[#A6E1FA] p-4 shadow dark:bg-[#001C55]"
-                >
+                <div v-for="game in games.data" :key="game.id" class="flex h-full flex-col rounded-lg bg-[#A6E1FA] p-4 shadow dark:bg-[#001C55]">
                     <img
-                        v-if="game.cover_url"
-                        :src="`https:${game.cover_url.replace('t_thumb', 't_cover_big')}`"
+                        v-if="gameCoverUrl(game.cover_url)"
+                        :src="gameCoverUrl(game.cover_url) ?? undefined"
                         alt=""
                         class="mb-4 h-auto w-full rounded"
                     />
@@ -292,7 +288,7 @@ const clearSearch = () => {
                     <p
                         v-if="game.storyline || game.summary || game.description"
                         class="mt-2 text-sm text-[#0E6BA8] dark:text-white"
-                        style="display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; min-height: 4.5rem;"
+                        style="display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; min-height: 4.5rem"
                     >
                         {{ game.storyline ?? game.summary ?? game.description }}
                     </p>

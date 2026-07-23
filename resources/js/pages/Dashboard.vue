@@ -1,21 +1,10 @@
 <script setup lang="ts">
 import AppHeaderLayout from '@/layouts/app/AppHeaderLayout.vue';
+import { gameCoverUrl } from '@/lib/game-images';
 import { fetchDashboardStats, type DashboardStats } from '@/lib/stats';
 import { type BreadcrumbItem, type SharedData } from '@/types';
 import { Head, Link, usePage } from '@inertiajs/vue3';
-import {
-    ArrowRight,
-    BookOpen,
-    Crown,
-    Gamepad2,
-    Megaphone,
-    Newspaper,
-    ShieldCheck,
-    Sparkles,
-    Star,
-    UserMinus,
-    Users,
-} from 'lucide-vue-next';
+import { ArrowRight, BookOpen, Crown, Gamepad2, Megaphone, Newspaper, ShieldCheck, Sparkles, Star, UserMinus, Users } from 'lucide-vue-next';
 import { computed, onMounted, ref, watch, type Component } from 'vue';
 
 interface AdminAction {
@@ -61,9 +50,7 @@ interface DashboardPageProps extends SharedData {
 const page = usePage<DashboardPageProps>();
 
 const breadcrumbs: BreadcrumbItem[] = [{ title: 'Accueil', href: '/' }];
-const isAdmin = computed(
-    () => page.props.auth.user?.is_admin || page.props.auth.user?.is_super_admin || false,
-);
+const isAdmin = computed(() => page.props.auth.user?.is_admin || page.props.auth.user?.is_super_admin || false);
 const latestArticles = computed(() => page.props.latestArticles ?? []);
 const featureArticle = computed(() => latestArticles.value[0] ?? null);
 const secondaryArticles = computed(() => latestArticles.value.slice(1));
@@ -102,10 +89,7 @@ const loadStats = async () => {
         statsError.value = null;
         stats.value = await fetchDashboardStats();
     } catch (error) {
-        statsError.value =
-            error instanceof Error
-                ? error.message
-                : 'Une erreur est survenue lors du chargement des statistiques.';
+        statsError.value = error instanceof Error ? error.message : 'Une erreur est survenue lors du chargement des statistiques.';
     } finally {
         isStatsLoading.value = false;
     }
@@ -132,8 +116,7 @@ const formatDate = (value: string | null | undefined) =>
           }).format(new Date(value))
         : null;
 
-const formatNumber = (value: number | null | undefined) =>
-    value == null ? '—' : value.toLocaleString('fr-FR');
+const formatNumber = (value: number | null | undefined) => (value == null ? '—' : value.toLocaleString('fr-FR'));
 
 const formatAverage = (value: number | null | undefined) =>
     value == null
@@ -143,17 +126,7 @@ const formatAverage = (value: number | null | undefined) =>
               maximumFractionDigits: 1,
           });
 
-const gameCoverUrl = (coverUrl: string | null | undefined) => {
-    if (!coverUrl) {
-        return null;
-    }
-
-    const sizedCover = coverUrl.replace('t_thumb', 't_cover_big');
-    return sizedCover.startsWith('//') ? `https:${sizedCover}` : sizedCover;
-};
-
-const articleVisual = (article: LatestArticle) =>
-    article.image_url ?? gameCoverUrl(article.game.cover_url);
+const articleVisual = (article: LatestArticle) => article.image_url ?? gameCoverUrl(article.game.cover_url);
 
 const statItems = computed(() => [
     {
@@ -161,8 +134,7 @@ const statItems = computed(() => [
         value: `${formatAverage(stats.value?.ratings.average)} / 10`,
         icon: Star,
         featured: true,
-        className:
-            'bg-gradient-to-br from-[#0E6BA8] to-[#001C55] text-white shadow-[0_18px_45px_-24px_rgba(0,28,85,0.8)]',
+        className: 'bg-gradient-to-br from-[#0E6BA8] to-[#001C55] text-white shadow-[0_18px_45px_-24px_rgba(0,28,85,0.8)]',
     },
     {
         label: 'Jeux',
@@ -224,17 +196,17 @@ const statItems = computed(() => [
                     aria-labelledby="announcement-title"
                 >
                     <div class="flex items-start gap-3">
-                        <span class="mt-0.5 flex size-10 shrink-0 items-center justify-center rounded-xl bg-[#A6E1FA]/70 text-[#001C55] dark:bg-[#0E6BA8] dark:text-white">
+                        <span
+                            class="mt-0.5 flex size-10 shrink-0 items-center justify-center rounded-xl bg-[#A6E1FA]/70 text-[#001C55] dark:bg-[#0E6BA8] dark:text-white"
+                        >
                             <Megaphone class="size-5" aria-hidden="true" />
                         </span>
                         <div>
-                            <p class="text-xs font-bold uppercase tracking-[0.18em] text-[#001C55] dark:text-[#A6E1FA]">
-                                Flash info
-                            </p>
+                            <p class="text-xs font-bold tracking-[0.18em] text-[#001C55] uppercase dark:text-[#A6E1FA]">Flash info</p>
                             <h2 id="announcement-title" class="mt-0.5 text-base font-bold text-[#001C55] dark:text-white">
                                 {{ currentAnnouncement.title }}
                             </h2>
-                            <p class="mt-1 whitespace-pre-line text-sm leading-relaxed text-slate-600 dark:text-white/75">
+                            <p class="mt-1 text-sm leading-relaxed whitespace-pre-line text-slate-600 dark:text-white/75">
                                 {{ currentAnnouncement.content }}
                             </p>
                         </div>
@@ -256,7 +228,7 @@ const statItems = computed(() => [
                 >
                     <div class="flex flex-col gap-4 lg:flex-row lg:items-center">
                         <div class="lg:w-56 lg:shrink-0">
-                            <p class="text-xs font-bold uppercase tracking-[0.18em] text-[#A6E1FA]">Espace privé</p>
+                            <p class="text-xs font-bold tracking-[0.18em] text-[#A6E1FA] uppercase">Espace privé</p>
                             <h2 id="admin-tools-title" class="mt-1 text-lg font-bold !text-white">Outils d’administration</h2>
                         </div>
                         <div class="grid flex-1 gap-3 md:grid-cols-3">
@@ -264,7 +236,7 @@ const statItems = computed(() => [
                                 v-for="link in adminLinks"
                                 :key="link.title"
                                 :href="link.href"
-                                class="group flex items-center gap-3 rounded-xl border border-white/15 bg-white/5 p-3 transition duration-200 hover:-translate-y-0.5 hover:border-[#A6E1FA]/60 hover:bg-white/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#A6E1FA] motion-reduce:transform-none"
+                                class="group flex items-center gap-3 rounded-xl border border-white/15 bg-white/5 p-3 transition duration-200 hover:-translate-y-0.5 hover:border-[#A6E1FA]/60 hover:bg-white/10 focus-visible:ring-2 focus-visible:ring-[#A6E1FA] focus-visible:outline-none motion-reduce:transform-none"
                             >
                                 <span class="flex size-9 shrink-0 items-center justify-center rounded-lg bg-[#0E6BA8] text-white">
                                     <component :is="link.icon" class="size-4" aria-hidden="true" />
@@ -279,11 +251,13 @@ const statItems = computed(() => [
                 </section>
 
                 <header class="max-w-3xl">
-                    <div class="inline-flex items-center gap-2 rounded-full border border-[#001C55]/20 bg-white/90 px-3 py-1.5 text-xs font-bold uppercase tracking-[0.2em] text-[#001C55] shadow-sm backdrop-blur dark:border-[#A6E1FA]/20 dark:bg-[#001C55]/70 dark:text-[#A6E1FA]">
+                    <div
+                        class="inline-flex items-center gap-2 rounded-full border border-[#001C55]/20 bg-white/90 px-3 py-1.5 text-xs font-bold tracking-[0.2em] text-[#001C55] uppercase shadow-sm backdrop-blur dark:border-[#A6E1FA]/20 dark:bg-[#001C55]/70 dark:text-[#A6E1FA]"
+                    >
                         <span class="size-2 rounded-full bg-[#0E6BA8] shadow-[0_0_0_4px_rgba(14,107,168,0.12)] dark:bg-[#A6E1FA]"></span>
                         Le fil LevelUp
                     </div>
-                    <h1 class="mt-4 text-balance text-4xl font-black tracking-tight text-[#001C55] sm:text-5xl lg:text-6xl dark:text-white">
+                    <h1 class="mt-4 text-4xl font-black tracking-tight text-balance text-[#001C55] sm:text-5xl lg:text-6xl dark:text-white">
                         Le jeu vidéo,<br />
                         <span class="text-[#075985] dark:text-[#A6E1FA]">au rythme du moment.</span>
                     </h1>
@@ -309,22 +283,25 @@ const statItems = computed(() => [
                         <div v-else aria-hidden="true" class="article-placeholder absolute inset-0"></div>
                         <div class="absolute inset-0 bg-gradient-to-t from-[#00072D] via-[#001C55]/65 to-[#001C55]/5"></div>
                         <div class="absolute inset-x-0 bottom-0 z-10 p-6 sm:p-8 lg:p-10">
-                            <div class="mb-4 flex flex-wrap items-center gap-2 text-xs font-bold uppercase tracking-[0.14em] text-white/80">
+                            <div class="mb-4 flex flex-wrap items-center gap-2 text-xs font-bold tracking-[0.14em] text-white/80 uppercase">
                                 <Link
                                     :href="route('games.show', featureArticle.game.slug)"
-                                    class="rounded-full bg-[#A6E1FA] px-3 py-1.5 text-[#001C55] transition hover:bg-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white"
+                                    class="rounded-full bg-[#A6E1FA] px-3 py-1.5 text-[#001C55] transition hover:bg-white focus-visible:ring-2 focus-visible:ring-white focus-visible:outline-none"
                                 >
                                     {{ featureArticle.game.title }}
                                 </Link>
-                                <span v-if="featureArticle.is_premium" class="inline-flex items-center gap-1 rounded-full bg-amber-300 px-3 py-1.5 text-amber-950">
+                                <span
+                                    v-if="featureArticle.is_premium"
+                                    class="inline-flex items-center gap-1 rounded-full bg-amber-300 px-3 py-1.5 text-amber-950"
+                                >
                                     <Crown class="size-3.5" aria-hidden="true" /> Premium
                                 </span>
                                 <span v-if="formatDate(featureArticle.published_at)" class="px-1">
                                     {{ formatDate(featureArticle.published_at) }}
                                 </span>
                             </div>
-                            <p class="mb-2 text-xs font-bold uppercase tracking-[0.22em] text-[#A6E1FA]">À la une</p>
-                            <h2 id="featured-article-title" class="max-w-3xl text-3xl font-black leading-tight !text-white sm:text-4xl lg:text-5xl">
+                            <p class="mb-2 text-xs font-bold tracking-[0.22em] text-[#A6E1FA] uppercase">À la une</p>
+                            <h2 id="featured-article-title" class="max-w-3xl text-3xl leading-tight font-black !text-white sm:text-4xl lg:text-5xl">
                                 {{ featureArticle.title }}
                             </h2>
                             <p class="mt-4 max-w-2xl text-sm leading-relaxed text-white/75 sm:text-base">
@@ -339,10 +316,13 @@ const statItems = computed(() => [
                                 </p>
                                 <Link
                                     :href="route('articles.show', featureArticle.slug)"
-                                    class="inline-flex items-center gap-2 rounded-full bg-white px-5 py-3 text-sm font-bold text-[#001C55] shadow-lg transition duration-200 hover:-translate-y-0.5 hover:bg-[#A6E1FA] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#A6E1FA] focus-visible:ring-offset-2 focus-visible:ring-offset-[#001C55] motion-reduce:transform-none"
+                                    class="inline-flex items-center gap-2 rounded-full bg-white px-5 py-3 text-sm font-bold text-[#001C55] shadow-lg transition duration-200 hover:-translate-y-0.5 hover:bg-[#A6E1FA] focus-visible:ring-2 focus-visible:ring-[#A6E1FA] focus-visible:ring-offset-2 focus-visible:ring-offset-[#001C55] focus-visible:outline-none motion-reduce:transform-none"
                                 >
                                     Lire l’article
-                                    <ArrowRight class="size-4 transition group-hover:translate-x-0.5 motion-reduce:transform-none" aria-hidden="true" />
+                                    <ArrowRight
+                                        class="size-4 transition group-hover:translate-x-0.5 motion-reduce:transform-none"
+                                        aria-hidden="true"
+                                    />
                                 </Link>
                             </div>
                         </div>
@@ -357,7 +337,7 @@ const statItems = computed(() => [
                             <span class="flex size-12 items-center justify-center rounded-2xl bg-white/15 text-white backdrop-blur">
                                 <Newspaper class="size-6" aria-hidden="true" />
                             </span>
-                            <p class="mt-5 text-xs font-bold uppercase tracking-[0.2em] text-[#A6E1FA]">À la une</p>
+                            <p class="mt-5 text-xs font-bold tracking-[0.2em] text-[#A6E1FA] uppercase">À la une</p>
                             <h2 id="empty-feature-title" class="mt-2 text-3xl font-black !text-white sm:text-4xl">
                                 La prochaine histoire se prépare.
                             </h2>
@@ -372,21 +352,35 @@ const statItems = computed(() => [
                     >
                         <div class="mb-5 flex items-end justify-between gap-4">
                             <div>
-                                <p class="text-xs font-bold uppercase tracking-[0.18em] text-[#001C55] dark:text-[#A6E1FA]">En direct</p>
+                                <p class="text-xs font-bold tracking-[0.18em] text-[#001C55] uppercase dark:text-[#A6E1FA]">En direct</p>
                                 <h2 id="stats-title" class="mt-1 text-2xl font-black text-[#001C55] dark:text-white">Le pouls du média</h2>
                             </div>
-                            <span class="flex size-10 items-center justify-center rounded-full bg-[#0E6BA8]/10 text-[#0E6BA8] dark:bg-[#A6E1FA]/10 dark:text-[#A6E1FA]">
+                            <span
+                                class="flex size-10 items-center justify-center rounded-full bg-[#0E6BA8]/10 text-[#0E6BA8] dark:bg-[#A6E1FA]/10 dark:text-[#A6E1FA]"
+                            >
                                 <Sparkles class="size-5" aria-hidden="true" />
                             </span>
                         </div>
 
                         <div v-if="isStatsLoading" class="grid grid-cols-2 gap-3" aria-label="Chargement des statistiques">
-                            <div v-for="index in 7" :key="index" class="h-28 animate-pulse rounded-2xl bg-slate-200/80 dark:bg-white/10" :class="index === 1 ? 'col-span-2 h-32' : ''"></div>
+                            <div
+                                v-for="index in 7"
+                                :key="index"
+                                class="h-28 animate-pulse rounded-2xl bg-slate-200/80 dark:bg-white/10"
+                                :class="index === 1 ? 'col-span-2 h-32' : ''"
+                            ></div>
                         </div>
-                        <div v-else-if="statsError" class="rounded-2xl border border-red-200 bg-red-50 p-5 text-sm text-red-700 dark:border-red-400/30 dark:bg-red-950/30 dark:text-red-200">
+                        <div
+                            v-else-if="statsError"
+                            class="rounded-2xl border border-red-200 bg-red-50 p-5 text-sm text-red-700 dark:border-red-400/30 dark:bg-red-950/30 dark:text-red-200"
+                        >
                             <p class="font-bold">Statistiques indisponibles</p>
                             <p class="mt-1">{{ statsError }}</p>
-                            <button type="button" class="mt-4 rounded-full border border-current px-4 py-2 font-bold hover:bg-red-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500 dark:hover:bg-red-900/30" @click="loadStats">
+                            <button
+                                type="button"
+                                class="mt-4 rounded-full border border-current px-4 py-2 font-bold hover:bg-red-100 focus-visible:ring-2 focus-visible:ring-red-500 focus-visible:outline-none dark:hover:bg-red-900/30"
+                                @click="loadStats"
+                            >
                                 Réessayer
                             </button>
                         </div>
@@ -397,8 +391,8 @@ const statItems = computed(() => [
                                 class="relative min-h-28 overflow-hidden rounded-2xl border border-[#0E6BA8]/10 p-4 transition duration-200 hover:-translate-y-0.5 motion-reduce:transform-none dark:border-white/10"
                                 :class="[item.className, item.featured ? 'col-span-2 min-h-32' : '']"
                             >
-                                <component :is="item.icon" class="absolute right-3 top-3 size-5 opacity-65" aria-hidden="true" />
-                                <dt class="pr-7 text-xs font-bold uppercase tracking-[0.12em] opacity-70">{{ item.label }}</dt>
+                                <component :is="item.icon" class="absolute top-3 right-3 size-5 opacity-65" aria-hidden="true" />
+                                <dt class="pr-7 text-xs font-bold tracking-[0.12em] uppercase opacity-70">{{ item.label }}</dt>
                                 <dd class="mt-5 text-2xl font-black tracking-tight" :class="item.featured ? 'text-4xl' : ''">
                                     {{ item.value }}
                                 </dd>
@@ -410,8 +404,10 @@ const statItems = computed(() => [
                 <section v-if="secondaryArticles.length" aria-labelledby="latest-articles-title">
                     <div class="mb-5 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
                         <div>
-                            <p class="text-xs font-bold uppercase tracking-[0.18em] text-[#001C55] dark:text-[#A6E1FA]">À découvrir</p>
-                            <h2 id="latest-articles-title" class="mt-1 text-3xl font-black text-[#001C55] sm:text-4xl dark:text-white">Les dernières chroniques</h2>
+                            <p class="text-xs font-bold tracking-[0.18em] text-[#001C55] uppercase dark:text-[#A6E1FA]">À découvrir</p>
+                            <h2 id="latest-articles-title" class="mt-1 text-3xl font-black text-[#001C55] sm:text-4xl dark:text-white">
+                                Les dernières chroniques
+                            </h2>
                         </div>
                         <p class="max-w-md text-sm text-slate-500 sm:text-right dark:text-white/60">
                             Analyses, actualités et regards de la rédaction sur les jeux du moment.
@@ -436,20 +432,31 @@ const statItems = computed(() => [
                                         class="absolute inset-0 size-full object-cover transition duration-500 group-hover:scale-105 motion-reduce:transform-none motion-reduce:transition-none"
                                     />
                                     <div v-else aria-hidden="true" class="article-placeholder absolute inset-0"></div>
-                                    <span v-if="article.is_premium" class="absolute left-3 top-3 inline-flex items-center gap-1 rounded-full bg-amber-300 px-2.5 py-1 text-[0.65rem] font-black uppercase tracking-wide text-amber-950 shadow">
+                                    <span
+                                        v-if="article.is_premium"
+                                        class="absolute top-3 left-3 inline-flex items-center gap-1 rounded-full bg-amber-300 px-2.5 py-1 text-[0.65rem] font-black tracking-wide text-amber-950 uppercase shadow"
+                                    >
                                         <Crown class="size-3" aria-hidden="true" /> Premium
                                     </span>
                                 </div>
                                 <div class="flex flex-col p-5 sm:p-6">
-                                    <div class="flex flex-wrap items-center gap-2 text-xs font-bold uppercase tracking-[0.1em] text-[#001C55] dark:text-[#A6E1FA]">
-                                        <Link :href="route('games.show', article.game.slug)" class="hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0E6BA8]">
+                                    <div
+                                        class="flex flex-wrap items-center gap-2 text-xs font-bold tracking-[0.1em] text-[#001C55] uppercase dark:text-[#A6E1FA]"
+                                    >
+                                        <Link
+                                            :href="route('games.show', article.game.slug)"
+                                            class="hover:underline focus-visible:ring-2 focus-visible:ring-[#0E6BA8] focus-visible:outline-none"
+                                        >
                                             {{ article.game.title }}
                                         </Link>
                                         <span aria-hidden="true">•</span>
                                         <span class="text-slate-400 dark:text-white/45">{{ formatDate(article.published_at) ?? 'Bientôt' }}</span>
                                     </div>
-                                    <h3 class="mt-3 text-xl font-black leading-tight sm:text-2xl">
-                                        <Link :href="route('articles.show', article.slug)" class="text-[#001C55] transition hover:text-[#075985] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0E6BA8] dark:text-white dark:hover:text-[#A6E1FA]">
+                                    <h3 class="mt-3 text-xl leading-tight font-black sm:text-2xl">
+                                        <Link
+                                            :href="route('articles.show', article.slug)"
+                                            class="text-[#001C55] transition hover:text-[#075985] focus-visible:ring-2 focus-visible:ring-[#0E6BA8] focus-visible:outline-none dark:text-white dark:hover:text-[#A6E1FA]"
+                                        >
                                             {{ article.title }}
                                         </Link>
                                     </h3>
@@ -460,7 +467,10 @@ const statItems = computed(() => [
                                         <p class="truncate text-xs text-slate-500 dark:text-white/50">
                                             {{ article.author.name ?? article.author.username }}
                                         </p>
-                                        <Link :href="route('articles.show', article.slug)" class="inline-flex items-center gap-1.5 text-sm font-bold text-[#0E6BA8] hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0E6BA8] dark:text-[#A6E1FA]">
+                                        <Link
+                                            :href="route('articles.show', article.slug)"
+                                            class="inline-flex items-center gap-1.5 text-sm font-bold text-[#0E6BA8] hover:underline focus-visible:ring-2 focus-visible:ring-[#0E6BA8] focus-visible:outline-none dark:text-[#A6E1FA]"
+                                        >
                                             Lire <ArrowRight class="size-4" aria-hidden="true" />
                                         </Link>
                                     </div>
@@ -473,12 +483,14 @@ const statItems = computed(() => [
                 <section aria-labelledby="recent-games-title">
                     <div class="mb-5 flex items-end justify-between gap-4">
                         <div>
-                            <p class="text-xs font-bold uppercase tracking-[0.18em] text-[#001C55] dark:text-[#A6E1FA]">Bibliothèque</p>
-                            <h2 id="recent-games-title" class="mt-1 text-3xl font-black text-[#001C55] sm:text-4xl dark:text-white">Fraîchement ajoutés</h2>
+                            <p class="text-xs font-bold tracking-[0.18em] text-[#001C55] uppercase dark:text-[#A6E1FA]">Bibliothèque</p>
+                            <h2 id="recent-games-title" class="mt-1 text-3xl font-black text-[#001C55] sm:text-4xl dark:text-white">
+                                Fraîchement ajoutés
+                            </h2>
                         </div>
                         <Link
                             :href="route('games.index')"
-                            class="hidden items-center gap-2 rounded-full border border-[#0E6BA8]/25 bg-white/70 px-4 py-2 text-sm font-bold text-[#0E6BA8] transition hover:border-[#0E6BA8] hover:bg-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0E6BA8] sm:inline-flex dark:border-[#A6E1FA]/30 dark:bg-[#001C55]/70 dark:text-[#A6E1FA]"
+                            class="hidden items-center gap-2 rounded-full border border-[#0E6BA8]/25 bg-white/70 px-4 py-2 text-sm font-bold text-[#0E6BA8] transition hover:border-[#0E6BA8] hover:bg-white focus-visible:ring-2 focus-visible:ring-[#0E6BA8] focus-visible:outline-none sm:inline-flex dark:border-[#A6E1FA]/30 dark:bg-[#001C55]/70 dark:text-[#A6E1FA]"
                         >
                             Tous les jeux <ArrowRight class="size-4" aria-hidden="true" />
                         </Link>
@@ -494,7 +506,7 @@ const statItems = computed(() => [
                             v-for="game in recentGames"
                             :key="game.id"
                             :href="route('games.show', game.slug)"
-                            class="group relative w-[68vw] max-w-64 shrink-0 snap-start overflow-hidden rounded-3xl bg-[#001C55] shadow-[0_18px_45px_-28px_rgba(0,28,85,0.9)] transition duration-300 hover:-translate-y-1 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0E6BA8] focus-visible:ring-offset-2 motion-reduce:transform-none sm:w-56 lg:w-auto"
+                            class="group relative w-[68vw] max-w-64 shrink-0 snap-start overflow-hidden rounded-3xl bg-[#001C55] shadow-[0_18px_45px_-28px_rgba(0,28,85,0.9)] transition duration-300 hover:-translate-y-1 focus-visible:ring-2 focus-visible:ring-[#0E6BA8] focus-visible:ring-offset-2 focus-visible:outline-none motion-reduce:transform-none sm:w-56 lg:w-auto"
                         >
                             <div class="aspect-[3/4] overflow-hidden">
                                 <img
@@ -510,14 +522,17 @@ const statItems = computed(() => [
                                 </div>
                             </div>
                             <div class="absolute inset-x-0 bottom-0 bg-gradient-to-t from-[#00072D] via-[#00072D]/90 to-transparent p-4 pt-16">
-                                <h3 class="line-clamp-2 text-lg font-black leading-tight !text-white">{{ game.title }}</h3>
+                                <h3 class="line-clamp-2 text-lg leading-tight font-black !text-white">{{ game.title }}</h3>
                                 <p class="mt-1 text-xs font-semibold text-[#A6E1FA]">
                                     {{ formatDate(game.searched_at) ?? 'Date inconnue' }}
                                 </p>
                             </div>
                         </Link>
                     </div>
-                    <div v-else class="rounded-3xl border border-dashed border-[#0E6BA8]/30 bg-white/60 p-8 text-center dark:border-[#A6E1FA]/25 dark:bg-[#001C55]/50">
+                    <div
+                        v-else
+                        class="rounded-3xl border border-dashed border-[#0E6BA8]/30 bg-white/60 p-8 text-center dark:border-[#A6E1FA]/25 dark:bg-[#001C55]/50"
+                    >
                         <Gamepad2 class="mx-auto size-8 text-[#0E6BA8] dark:text-[#A6E1FA]" aria-hidden="true" />
                         <h3 class="mt-3 text-lg font-black text-[#001C55] dark:text-white">La bibliothèque se prépare.</h3>
                         <p class="mt-1 text-sm text-slate-500 dark:text-white/60">Les derniers jeux ajoutés apparaîtront ici.</p>
@@ -525,7 +540,7 @@ const statItems = computed(() => [
 
                     <Link
                         :href="route('games.index')"
-                        class="mt-4 inline-flex items-center gap-2 rounded-full border border-[#0E6BA8]/25 bg-white/70 px-4 py-2 text-sm font-bold text-[#0E6BA8] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0E6BA8] sm:hidden dark:border-[#A6E1FA]/30 dark:bg-[#001C55]/70 dark:text-[#A6E1FA]"
+                        class="mt-4 inline-flex items-center gap-2 rounded-full border border-[#0E6BA8]/25 bg-white/70 px-4 py-2 text-sm font-bold text-[#0E6BA8] focus-visible:ring-2 focus-visible:ring-[#0E6BA8] focus-visible:outline-none sm:hidden dark:border-[#A6E1FA]/30 dark:bg-[#001C55]/70 dark:text-[#A6E1FA]"
                     >
                         Tous les jeux <ArrowRight class="size-4" aria-hidden="true" />
                     </Link>
@@ -538,11 +553,13 @@ const statItems = computed(() => [
 <style scoped>
 .dashboard-surface {
     background:
-        linear-gradient(rgba(14, 107, 168, 0.045) 1px, transparent 1px),
-        linear-gradient(90deg, rgba(14, 107, 168, 0.045) 1px, transparent 1px),
-        radial-gradient(circle at 10% 0%, rgba(166, 225, 250, 0.22), transparent 36%),
-        var(--background);
-    background-size: 42px 42px, 42px 42px, auto, auto;
+        linear-gradient(rgba(14, 107, 168, 0.045) 1px, transparent 1px), linear-gradient(90deg, rgba(14, 107, 168, 0.045) 1px, transparent 1px),
+        radial-gradient(circle at 10% 0%, rgba(166, 225, 250, 0.22), transparent 36%), var(--background);
+    background-size:
+        42px 42px,
+        42px 42px,
+        auto,
+        auto;
 }
 
 .dashboard-glow {
@@ -567,9 +584,7 @@ const statItems = computed(() => [
 }
 
 .article-placeholder {
-    background:
-        radial-gradient(circle at 70% 20%, rgba(166, 225, 250, 0.3), transparent 28%),
-        linear-gradient(135deg, #0e6ba8, #001c55 55%, #00072d);
+    background: radial-gradient(circle at 70% 20%, rgba(166, 225, 250, 0.3), transparent 28%), linear-gradient(135deg, #0e6ba8, #001c55 55%, #00072d);
 }
 
 .game-rail {

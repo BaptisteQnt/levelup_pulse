@@ -84,7 +84,6 @@ return [
             'https://fonts.bunny.net',
         ], $devScriptSources);
 
-
         return [
             'default-src' => [
                 "'self'",
@@ -96,6 +95,11 @@ return [
             'font-src' => [
                 "'self'",
                 'https://fonts.bunny.net',
+            ],
+            'img-src' => [
+                "'self'",
+                'data:',
+                'https://images.igdb.com',
             ],
             'frame-src' => [
                 "'self'",

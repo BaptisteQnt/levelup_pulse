@@ -1,6 +1,7 @@
 <script setup lang="ts">
-import AppHeaderLayout from '@/layouts/app/AppHeaderLayout.vue';
 import CompatibilityScanner from '@/components/games/CompatibilityScanner.vue';
+import AppHeaderLayout from '@/layouts/app/AppHeaderLayout.vue';
+import { gameCoverUrl } from '@/lib/game-images';
 import { type BreadcrumbItem } from '@/types';
 import { Head, Link, useForm, usePage } from '@inertiajs/vue3';
 import { computed, ref, watch } from 'vue';
@@ -50,18 +51,18 @@ const breadcrumbs = computed<BreadcrumbItem[]>(() => [
 ]);
 
 const displayText = computed(() => {
-    const parts = [props.game.storyline, props.game.summary, props.game.description].filter(
-        (value): value is string => Boolean(value && value.trim()),
+    const parts = [props.game.storyline, props.game.summary, props.game.description].filter((value): value is string =>
+        Boolean(value && value.trim()),
     );
 
     return parts.length ? parts.join('\n\n') : null;
 });
 
 const ratingForm = useForm({
-    rating: props.game.ratings.enabled ? props.game.ratings.user ?? null : null,
+    rating: props.game.ratings.enabled ? (props.game.ratings.user ?? null) : null,
 });
 
-const userRating = ref<number | null>(props.game.ratings.enabled ? props.game.ratings.user ?? null : null);
+const userRating = ref<number | null>(props.game.ratings.enabled ? (props.game.ratings.user ?? null) : null);
 
 watch(
     () => props.game.ratings,
@@ -129,27 +130,27 @@ const formatDate = (value: string | null) =>
 
             <section class="grid gap-8 md:grid-cols-[220px_1fr]">
                 <img
-                    v-if="game.cover_url"
-                    :src="`https:${game.cover_url.replace('t_thumb', 't_cover_big')}`"
+                    v-if="gameCoverUrl(game.cover_url)"
+                    :src="gameCoverUrl(game.cover_url) ?? undefined"
                     alt="Couverture du jeu"
                     class="w-full rounded-lg shadow-md"
                 />
                 <div>
                     <div class="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
                         <div>
-                            <p class="text-xs font-semibold uppercase text-primary">Fiche jeu</p>
+                            <p class="text-primary text-xs font-semibold uppercase">Fiche jeu</p>
                             <h1 class="text-3xl font-bold text-[#001C55] dark:text-[#A6E1FA]">{{ game.title }}</h1>
                         </div>
                         <Link
                             v-if="canCreateArticle"
                             :href="route('articles.create', game.id)"
-                            class="inline-flex items-center justify-center rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-white shadow transition hover:bg-primary/90"
+                            class="bg-primary hover:bg-primary/90 inline-flex items-center justify-center rounded-lg px-4 py-2 text-sm font-semibold text-white shadow transition"
                         >
                             Rediger un article
                         </Link>
                     </div>
 
-                    <p class="mt-6 whitespace-pre-line text-base leading-relaxed text-gray-700 dark:text-[#A6E1FA]">
+                    <p class="mt-6 text-base leading-relaxed whitespace-pre-line text-gray-700 dark:text-[#A6E1FA]">
                         {{ displayText ?? 'Aucune description disponible.' }}
                     </p>
                 </div>
@@ -170,7 +171,7 @@ const formatDate = (value: string | null) =>
                             type="button"
                             :disabled="ratingForm.processing || !auth.user || !game.ratings.enabled"
                             @click="setRating(star)"
-                            class="text-2xl transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            class="text-2xl transition-colors focus:ring-2 focus:ring-blue-500 focus:outline-none"
                             :class="[
                                 userRating !== null && star <= userRating ? 'text-yellow-400' : 'text-gray-300',
                                 auth.user && game.ratings.enabled ? 'hover:text-yellow-500' : 'cursor-not-allowed opacity-70',
@@ -194,7 +195,7 @@ const formatDate = (value: string | null) =>
             <section class="mt-10">
                 <header class="mb-4 flex items-center justify-between gap-4">
                     <div>
-                        <p class="text-xs font-semibold uppercase text-primary">Articles</p>
+                        <p class="text-primary text-xs font-semibold uppercase">Articles</p>
                         <h2 class="text-2xl font-bold text-[#001C55] dark:text-[#A6E1FA]">Publications autour du jeu</h2>
                     </div>
                 </header>
@@ -203,13 +204,11 @@ const formatDate = (value: string | null) =>
                     <article
                         v-for="article in game.articles"
                         :key="article.id"
-                        class="rounded-lg border border-gray-200 bg-white p-5 shadow-sm transition hover:border-primary/60 hover:bg-primary/5 dark:border-neutral-800 dark:bg-neutral-900"
+                        class="hover:border-primary/60 hover:bg-primary/5 rounded-lg border border-gray-200 bg-white p-5 shadow-sm transition dark:border-neutral-800 dark:bg-neutral-900"
                     >
                         <div class="mb-3 flex items-center justify-between gap-3 text-xs text-gray-600 dark:text-neutral-400">
                             <span>Par {{ article.author.name ?? article.author.username }}</span>
-                            <span v-if="article.is_premium" class="rounded-full bg-amber-100 px-2 py-1 font-semibold text-amber-700">
-                                Premium
-                            </span>
+                            <span v-if="article.is_premium" class="rounded-full bg-amber-100 px-2 py-1 font-semibold text-amber-700"> Premium </span>
                         </div>
                         <h3 class="text-lg font-semibold">
                             <Link :href="route('articles.show', article.slug)" class="hover:text-primary">
@@ -225,7 +224,10 @@ const formatDate = (value: string | null) =>
                         </div>
                     </article>
                 </div>
-                <p v-else class="rounded-lg border border-dashed border-gray-300 p-6 text-sm text-gray-600 dark:border-neutral-700 dark:text-neutral-400">
+                <p
+                    v-else
+                    class="rounded-lg border border-dashed border-gray-300 p-6 text-sm text-gray-600 dark:border-neutral-700 dark:text-neutral-400"
+                >
                     Aucun article publie pour ce jeu.
                 </p>
             </section>
