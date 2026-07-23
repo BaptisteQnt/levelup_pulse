@@ -18,9 +18,6 @@ class SecurityHeaders
         }
 
         $this->addStrictTransportSecurityHeader($request, $response);
-        $this->addFrameOptionsHeader($response);
-        $this->addContentTypeOptionsHeader($response);
-        $this->addReferrerPolicyHeader($response);
         $this->addContentSecurityPolicyHeader($response);
 
         return $response;
@@ -39,41 +36,34 @@ class SecurityHeaders
 
     protected function addStrictTransportSecurityHeader(Request $request, Response $response): void
     {
-        $config = config('security.hsts');
+        $config = config('security.hsts', []);
 
-        if (!($config['enabled'] ?? true)) {
+        if (! ($config['enabled'] ?? true)) {
             return;
         }
 
-        $parts = [sprintf('max-age=%d', $config['max_age'] ?? 0)];
+        if (! app()->environment('production') || ! $request->isSecure()) {
+            return;
+        }
 
-        if ($config['include_subdomains'] ?? false) {
+        $parts = [
+            'max-age=' . ($config['max_age'] ?? 63_072_000),
+        ];
+
+        if ($config['include_subdomains'] ?? true) {
             $parts[] = 'includeSubDomains';
         }
 
-        if ($config['preload'] ?? false) {
+        if ($config['preload'] ?? true) {
             $parts[] = 'preload';
         }
 
-        $response->headers->set('Strict-Transport-Security', implode('; ', $parts));
+        $response->headers->set(
+            'Strict-Transport-Security',
+            implode('; ', $parts)
+        );
     }
 
-    protected function addFrameOptionsHeader(Response $response): void
-    {
-        $value = config('security.x_frame_options', 'SAMEORIGIN');
-
-        $response->headers->set('X-Frame-Options', $value);
-    }
-
-    protected function addContentTypeOptionsHeader(Response $response): void
-    {
-        $response->headers->set('X-Content-Type-Options', 'nosniff');
-    }
-
-    protected function addReferrerPolicyHeader(Response $response): void
-    {
-        $response->headers->set('Referrer-Policy', config('security.referrer_policy', 'strict-origin-when-cross-origin'));
-    }
 
     protected function addContentSecurityPolicyHeader(Response $response): void
     {
