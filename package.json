@@ -1,4 +1,5 @@
 {
+    "name": "levelup_pulse",
     "private": true,
     "type": "module",
     "scripts": {

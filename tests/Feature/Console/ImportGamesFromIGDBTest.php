@@ -5,7 +5,6 @@ use App\Models\GameTranslation;
 use App\Services\IGDBService;
 use App\Services\Translator;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Mockery;
 
 uses(RefreshDatabase::class);
 

@@ -18,23 +18,46 @@ return [
     'referrer_policy' => 'strict-origin-when-cross-origin',
 
     'csp' => (function () {
-        $devHostnames = [
-            'localhost',
-            '127.0.0.1',
-            '[::1]',
-        ];
 
-        $devPorts = [5173];
-
-        $devSchemes = ['http', 'https'];
+        $isLocal = env('APP_ENV', 'production') === 'local';
 
         $devScriptSources = [];
+        $devConnectSources = [];
 
-        foreach ($devHostnames as $host) {
-            foreach ($devPorts as $port) {
-                foreach ($devSchemes as $scheme) {
-                    $devScriptSources[] = sprintf('%s://%s:%d', $scheme, $host, $port);
+        if ($isLocal) {
+
+            $devHostnames = [
+                'localhost',
+                '127.0.0.1',
+                '[::1]',
+            ];
+
+            $devPorts = [5173];
+
+            $devSchemes = [
+                'http',
+                'https',
+            ];
+
+            foreach ($devHostnames as $host) {
+                foreach ($devPorts as $port) {
+                    foreach ($devSchemes as $scheme) {
+                        $devScriptSources[] = sprintf(
+                            '%s://%s:%d',
+                            $scheme,
+                            $host,
+                            $port
+                        );
+                    }
                 }
+            }
+
+            $devConnectSources = $devScriptSources;
+
+            foreach ($devScriptSources as $source) {
+                $devConnectSources[] = str_starts_with($source, 'https://')
+                    ? preg_replace('/^https/', 'wss', $source, 1)
+                    : preg_replace('/^http/', 'ws', $source, 1);
             }
         }
 

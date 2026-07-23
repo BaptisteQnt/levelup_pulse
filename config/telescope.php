@@ -119,6 +119,9 @@ return [
         'pulse*',
         '_boost*',
         '.well-known*',
+        'api/compatibility-scans/*',
+        'games/*/compatibility-scans',
+        'games/*/compatibility-scans/*',
     ],
 
     'ignore_commands' => [
@@ -147,7 +150,9 @@ return [
 
         Watchers\ClientRequestWatcher::class => [
             'enabled' => env('TELESCOPE_CLIENT_REQUEST_WATCHER', true),
-            'ignore_hosts' => [],
+            'ignore_hosts' => [
+                'api.openai.com',
+            ],
         ],
 
         Watchers\CommandWatcher::class => [

@@ -3,9 +3,14 @@
 use App\Http\Controllers\API\AuthTokenController;
 use App\Http\Controllers\API\GameRatingController as ApiGameRatingController;
 use App\Http\Controllers\API\StatsController;
+use App\Http\Controllers\API\CompatibilityScanHardwareController;
 use Illuminate\Support\Facades\Route;
 
 Route::name('api.')->group(function () {
+    Route::post('compatibility-scans/{compatibilityScan}/hardware', [CompatibilityScanHardwareController::class, 'store'])
+        ->middleware('throttle:compatibility-scan-upload')
+        ->name('compatibility-scans.hardware.store');
+
     Route::post('auth/token', [AuthTokenController::class, 'store'])->name('auth.token.store');
 
     Route::middleware('auth:sanctum')->group(function () {

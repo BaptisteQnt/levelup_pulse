@@ -29,6 +29,11 @@ class Game extends Model
         return $this->hasMany(GameRating::class);
     }
 
+    public function compatibilityScans()
+    {
+        return $this->hasMany(CompatibilityScan::class);
+    }
+
     public function translatedDescription(string $lang = 'en'): ?string
     {
         $texts = $this->localizedTexts($lang);
@@ -75,4 +80,3 @@ class Game extends Model
     }
 
 }
-

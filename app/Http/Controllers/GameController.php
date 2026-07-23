@@ -157,6 +157,7 @@ class GameController extends Controller
             'game' => [
                 'id'          => $game->id,
                 'title'       => $game->title,
+                'slug'        => $game->slug,
                 'cover_url'   => $game->cover_url,
                 'summary'     => $texts['summary'],
                 'storyline'   => $texts['storyline'],

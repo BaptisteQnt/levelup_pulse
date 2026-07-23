@@ -7,6 +7,6 @@ export default defineComponent({
   },
   setup(props, { slots }) {
     return () =>
-      h('div', { 'data-app-header-layout': 'stub', breadcrumbs: JSON.stringify(props.breadcrumbs) }, slots.default ? slots.default() : []);
+      h('main', { 'data-app-header-layout': 'stub', breadcrumbs: JSON.stringify(props.breadcrumbs) }, slots.default ? slots.default() : []);
   },
 });

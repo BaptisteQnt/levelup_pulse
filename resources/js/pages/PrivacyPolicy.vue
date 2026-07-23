@@ -106,6 +106,7 @@ const formatDate = (value: string | null) =>
                     <li>Abonnement et paiement : historique d'abonnement Premium, transactions gérées par Stripe (aucune donnée bancaire n'est stockée sur LevelUp).</li>
                     <li>Navigation et audience : adresse IP, traces techniques, cookies nécessaires, mesures d'audience (Google Analytics, Microsoft Clarity) selon vos choix.</li>
                     <li>Contenus et interactions : notes, reactions aux articles et contributions publiees par les redacteurs.</li>
+                    <li>Test de compatibilité PC : version de Windows et DirectX, processeur, carte graphique et pilote, mémoire vive, type et espace des disques. Aucun nom de machine, numéro de série, fichier ou logiciel installé n'est collecté.</li>
                 </ul>
             </section>
 
@@ -118,6 +119,7 @@ const formatDate = (value: string | null) =>
                             <li>Création et gestion des comptes utilisateurs.</li>
                             <li>Accès aux fonctionnalités Premium et personnalisation du profil.</li>
                             <li>Gestion editoriale des articles et prevention des abus.</li>
+                            <li>Estimation ponctuelle de la compatibilité d'un PC avec le jeu sélectionné, après consentement explicite.</li>
                         </ul>
                         <p class="mt-3 text-sm text-neutral-600 dark:text-neutral-300">Base légale : exécution du contrat et intérêt légitime de sécuriser la plateforme.</p>
                     </div>
@@ -157,6 +159,7 @@ const formatDate = (value: string | null) =>
                     <li>Données de facturation : conservées conformément aux obligations comptables et fiscales applicables.</li>
                     <li>Cookies analytiques : durée maximale de 13 mois selon vos préférences de consentement.</li>
                     <li>Contenus publies : conserves tant qu'ils restent en ligne ou jusqu'a suppression editoriale.</li>
+                    <li>Tests de compatibilité PC : données matérielles et résultat supprimés automatiquement sous 24 heures, sans création de profil permanent.</li>
                 </ul>
             </section>
 
@@ -167,6 +170,7 @@ const formatDate = (value: string | null) =>
                     <li>Outils d'analyse (Google Analytics, Microsoft Clarity) activés uniquement après consentement.</li>
                     <li>Hébergeur Hostinger International Ltd. pour la conservation des données applicatives.</li>
                     <li>Equipe editoriale LevelUp, dans le cadre de la lutte contre les abus et de la conformite du media.</li>
+                    <li>OpenAI, uniquement pendant un test demandé par l'utilisateur, pour rechercher les prérequis du jeu et produire l'estimation de compatibilité.</li>
                 </ul>
             </section>
 

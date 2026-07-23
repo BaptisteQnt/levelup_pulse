@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Auth\ApiTokenRequest;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Symfony\Component\HttpFoundation\Response;
 
 class AuthTokenController extends Controller
 {
@@ -31,7 +32,7 @@ class AuthTokenController extends Controller
     /**
      * Revoke the currently authenticated access token.
      */
-    public function destroy(Request $request): JsonResponse
+    public function destroy(Request $request): Response
     {
         $request->user()->currentAccessToken()?->delete();
 

@@ -1,11 +1,15 @@
 <?php
 
+use App\Http\Middleware\SecurityHeaders;
+use Illuminate\Http\Request;
+use Symfony\Component\HttpFoundation\Response;
+
 it('adds security headers to standard responses', function () {
     $response = $this->get('/');
 
     $response->assertOk();
 
-    $response->assertHeader('Strict-Transport-Security', 'max-age=63072000; includeSubDomains; preload');
+    $response->assertHeaderMissing('Strict-Transport-Security');
     $response->assertHeader('X-Frame-Options', 'SAMEORIGIN');
     $response->assertHeader('X-Content-Type-Options', 'nosniff');
     $response->assertHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
@@ -18,4 +22,23 @@ it('adds security headers to standard responses', function () {
         ->implode('; ');
 
     $response->assertHeader('Content-Security-Policy', $expected);
+});
+
+it('adds HSTS to HTTPS responses in production', function () {
+    $this->app->detectEnvironment(fn () => 'production');
+
+    $request = Request::create('https://example.test/');
+    $response = (new SecurityHeaders())->handle($request, fn () => new Response());
+
+    expect($response->headers->get('Strict-Transport-Security'))
+        ->toBe('max-age=63072000; includeSubDomains; preload');
+});
+
+it('does not add HSTS to HTTP responses in production', function () {
+    $this->app->detectEnvironment(fn () => 'production');
+
+    $request = Request::create('http://example.test/');
+    $response = (new SecurityHeaders())->handle($request, fn () => new Response());
+
+    expect($response->headers->has('Strict-Transport-Security'))->toBeFalse();
 });

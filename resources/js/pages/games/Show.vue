@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import AppHeaderLayout from '@/layouts/app/AppHeaderLayout.vue';
+import CompatibilityScanner from '@/components/games/CompatibilityScanner.vue';
 import { type BreadcrumbItem } from '@/types';
 import { Head, Link, useForm, usePage } from '@inertiajs/vue3';
 import { computed, ref, watch } from 'vue';
@@ -22,6 +23,7 @@ const props = defineProps<{
     game: {
         id: number;
         title: string;
+        slug: string;
         cover_url: string | null;
         summary: string | null;
         storyline: string | null;
@@ -152,6 +154,8 @@ const formatDate = (value: string | null) =>
                     </p>
                 </div>
             </section>
+
+            <CompatibilityScanner :game-id="game.id" :game-slug="game.slug" :game-title="game.title" />
 
             <section class="mt-10 rounded-lg border border-gray-200 bg-white p-4 shadow-sm dark:border-neutral-800 dark:bg-[#00072d]">
                 <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">

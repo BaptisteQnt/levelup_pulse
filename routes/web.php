@@ -2,6 +2,7 @@
 
 use App\Actions\Dashboard\GetDashboardStats;
 use App\Http\Controllers\ArticleController;
+use App\Http\Controllers\ArticleAiController;
 use App\Http\Controllers\ArticleReactionController;
 use App\Http\Controllers\Security\AuditLogController;
 use App\Http\Controllers\UserProfileController;
@@ -19,7 +20,9 @@ use App\Models\Article;
 use App\Models\Game;
 use App\Http\Controllers\LegalController;
 use App\Http\Controllers\DataErasureRequestController;
+use App\Http\Controllers\CompatibilityScanController;
 use App\Http\Controllers\Admin\DataErasureRequestController as AdminDataErasureRequestController;
+use Illuminate\Support\Facades\Storage;
 
 
 $dashboardPage = function (Request $request) {
@@ -53,7 +56,7 @@ $dashboardPage = function (Request $request) {
 
     $latestArticles = Article::query()
         ->published()
-        ->with(['game:id,title,slug', 'author:id,name,username'])
+        ->with(['game:id,title,slug,cover_url', 'author:id,name,username'])
         ->latest('published_at')
         ->take(5)
         ->get()
@@ -62,11 +65,15 @@ $dashboardPage = function (Request $request) {
             'title' => $article->title,
             'slug' => $article->slug,
             'excerpt' => \Illuminate\Support\Str::limit(strip_tags($article->content), 150),
+            'image_url' => filled($article->images[0] ?? null)
+                ? Storage::disk('public')->url($article->images[0])
+                : null,
             'is_premium' => $article->is_premium,
             'published_at' => $article->published_at?->toIso8601String(),
             'game' => [
                 'title' => $article->game->title,
                 'slug' => $article->game->slug,
+                'cover_url' => $article->game->cover_url,
             ],
             'author' => [
                 'name' => $article->author->name,
@@ -102,12 +109,24 @@ Route::middleware(['auth', 'verified'])->get('/dashboard', $dashboardPage)->name
 Route::middleware('auth')->group(function () {
     Route::get('/games', [GameController::class, 'index'])->name('games.index');
     Route::get('/games/{slug}', [GameController::class, 'show'])->name('games.show');
+    Route::post('/games/{game}/compatibility-scans', [CompatibilityScanController::class, 'store'])
+        ->middleware('throttle:compatibility-scan-create')
+        ->name('games.compatibility-scans.store');
+    Route::get('/games/{game}/compatibility-scans/{compatibilityScan}', [CompatibilityScanController::class, 'show'])
+        ->middleware('throttle:60,1')
+        ->name('games.compatibility-scans.show');
     Route::post('/games/{game}/rating', [GameRatingController::class, 'store'])->name('games.rating.store');
     Route::get('/articles/{article:slug}', [ArticleController::class, 'show'])->name('articles.show');
     Route::post('/articles/{article:slug}/react', [ArticleReactionController::class, 'store'])->name('articles.react');
 });
 
 Route::middleware(['auth', 'editor'])->group(function () {
+    Route::post('/articles/ai/trending-games', [ArticleAiController::class, 'trending'])
+        ->middleware('throttle:article-ai-trends')
+        ->name('articles.ai.trending');
+    Route::post('/games/{game}/articles/ai/correct', [ArticleAiController::class, 'correct'])
+        ->middleware('throttle:article-ai-corrections')
+        ->name('articles.ai.correct');
     Route::get('/games/{game}/articles/create', [ArticleController::class, 'create'])->name('articles.create');
     Route::post('/games/{game}/articles', [ArticleController::class, 'store'])->name('articles.store');
     Route::get('/articles/{article:slug}/edit', [ArticleController::class, 'edit'])->name('articles.edit');

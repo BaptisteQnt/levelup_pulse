@@ -23,6 +23,7 @@ describe('Game show page', () => {
   const baseGame = {
     id: 1,
     title: 'Sample Game',
+    slug: 'sample-game',
     cover_url: null,
     summary: null,
     storyline: null,
@@ -76,5 +77,22 @@ describe('Game show page', () => {
 
     expect(html).toContain('Publications autour du jeu');
     expect(html).toContain('First review');
+  });
+
+  it('renders the Windows compatibility scanner and consent disclosure', async () => {
+    const ratingForm = createMockForm({ rating: null });
+    __setFormQueue([ratingForm]);
+
+    const mod = await server.ssrLoadModule('/resources/js/pages/games/Show.vue');
+    const { html } = await renderComponent(mod.default, {
+      game: baseGame,
+      canCreateArticle: false,
+      flash: null,
+    });
+
+    expect(html).toContain('Tester mon PC pour ce jeu');
+    expect(html).toContain('Windows et DirectX');
+    expect(html).toContain('OpenAI');
+    expect(html).toContain('supprimera sous 24 h');
   });
 });
