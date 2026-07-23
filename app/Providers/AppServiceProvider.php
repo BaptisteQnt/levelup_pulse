@@ -19,7 +19,7 @@ class AppServiceProvider extends ServiceProvider
 {
     public function register(): void
     {
-        $this->app->singleton(Translator::class, fn () => DeeplTranslator::fromEnv());
+        $this->app->singleton(Translator::class, fn () => DeeplTranslator::fromConfig());
         $this->app->bind(CompatibilityAiProvider::class, OpenAiCompatibilityProvider::class);
     }
 

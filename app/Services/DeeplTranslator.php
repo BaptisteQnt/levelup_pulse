@@ -1,4 +1,5 @@
 <?php
+
 namespace App\Services;
 
 use Illuminate\Support\Facades\Http;
@@ -12,14 +13,18 @@ class DeeplTranslator implements Translator
 
     public function translate(string $text, string $to = 'fr', ?string $from = 'en'): string
     {
-        if (trim($text) === '') return $text;
+        if (trim($text) === '') {
+            return $text;
+        }
 
         $payload = [
-            'text'         => $text,
-            'target_lang'  => strtoupper($to),     // FR
+            'text' => $text,
+            'target_lang' => strtoupper($to),     // FR
             'preserve_formatting' => 1,
         ];
-        if ($from) $payload['source_lang'] = strtoupper($from); // EN
+        if ($from) {
+            $payload['source_lang'] = strtoupper($from);
+        } // EN
 
         $res = Http::asForm()
             ->withHeaders(['Authorization' => 'DeepL-Auth-Key '.$this->apiKey])
@@ -29,11 +34,20 @@ class DeeplTranslator implements Translator
         return $res->json('translations.0.text') ?? $text;
     }
 
-    public static function fromEnv(): self
+    public static function fromConfig(): self
     {
+        $apiKey = config('services.deepl.key');
+        $baseUrl = config('services.deepl.url', 'https://api-free.deepl.com/v2/translate');
+
+        if (! is_string($apiKey) || trim($apiKey) === '') {
+            throw new \RuntimeException('DEEPL_API_KEY is not configured.');
+        }
+
         return new self(
-            apiKey: env('DEEPL_API_KEY', ''),
-            baseUrl: env('DEEPL_API_URL', 'https://api-free.deepl.com/v2/translate')
+            apiKey: trim($apiKey),
+            baseUrl: is_string($baseUrl) && trim($baseUrl) !== ''
+                ? trim($baseUrl)
+                : 'https://api-free.deepl.com/v2/translate'
         );
     }
 }

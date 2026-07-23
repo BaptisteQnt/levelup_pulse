@@ -8,13 +8,29 @@ use Illuminate\Support\Facades\Http;
 class IGDBService
 {
     protected string $clientId;
+
     protected string $clientSecret;
+
+    protected string $tokenUrl;
+
+    protected string $gamesUrl;
 
     public function __construct()
     {
-        $credentials = $this->loadCredentialsFromFile();
-        $this->clientId = $credentials['client_id'];
-        $this->clientSecret = $credentials['client_secret'];
+        $clientId = config('services.igdb.client_id');
+        $clientSecret = config('services.igdb.client_secret');
+
+        if (! is_string($clientId) || trim($clientId) === '' ||
+            ! is_string($clientSecret) || trim($clientSecret) === '') {
+            $credentials = $this->loadCredentialsFromFile();
+            $clientId = $credentials['client_id'];
+            $clientSecret = $credentials['client_secret'];
+        }
+
+        $this->clientId = trim($clientId);
+        $this->clientSecret = trim($clientSecret);
+        $this->tokenUrl = (string) config('services.igdb.token_url', 'https://id.twitch.tv/oauth2/token');
+        $this->gamesUrl = (string) config('services.igdb.games_url', 'https://api.igdb.com/v4/games');
     }
 
     /**
@@ -24,7 +40,7 @@ class IGDBService
     {
         $path = base_path('.twitch');
 
-        if (!file_exists($path)) {
+        if (! file_exists($path)) {
             throw new \RuntimeException('Fichier .twitch manquant à la racine du projet.');
         }
 
@@ -32,12 +48,14 @@ class IGDBService
         $credentials = [];
 
         foreach ($lines as $line) {
-            if (str_starts_with($line, '#')) continue;
+            if (str_starts_with($line, '#')) {
+                continue;
+            }
             [$key, $value] = explode('=', $line, 2);
             $credentials[trim($key)] = trim($value);
         }
 
-        if (!isset($credentials['CLI'], $credentials['SECRET'])) {
+        if (! isset($credentials['CLI'], $credentials['SECRET'])) {
             throw new \RuntimeException('CLIENT_ID ou CLIENT_SECRET manquant dans le fichier .twitch.');
         }
 
@@ -50,14 +68,14 @@ class IGDBService
     public function getAccessToken(): string
     {
         return Cache::remember('igdb_token', 3600, function () {
-            $response = Http::asForm()->post('https://id.twitch.tv/oauth2/token', [
+            $response = Http::asForm()->post($this->tokenUrl, [
                 'client_id' => $this->clientId,
                 'client_secret' => $this->clientSecret,
                 'grant_type' => 'client_credentials',
             ]);
 
-            if (!$response->ok()) {
-                throw new \RuntimeException('Erreur lors de la récupération du token : ' . $response->body());
+            if (! $response->ok()) {
+                throw new \RuntimeException('Erreur lors de la récupération du token : '.$response->body());
             }
 
             return $response->json()['access_token'];
@@ -70,15 +88,15 @@ class IGDBService
 
         $response = Http::withHeaders([
             'Client-ID' => $this->clientId,
-            'Authorization' => 'Bearer ' . $token,
+            'Authorization' => 'Bearer '.$token,
         ])->withBody("
             search \"{$search}\";
             fields id,name,slug,cover.url,summary,storyline;
             limit 5;
-        ", 'text/plain')->post('https://api.igdb.com/v4/games');
+        ", 'text/plain')->post($this->gamesUrl);
 
-        if (!$response->ok()) {
-            throw new \RuntimeException('Erreur lors de la récupération des jeux : ' . $response->body());
+        if (! $response->ok()) {
+            throw new \RuntimeException('Erreur lors de la récupération des jeux : '.$response->body());
         }
 
         return $response->json();
