@@ -18,6 +18,9 @@ class SecurityHeaders
         }
 
         $this->addStrictTransportSecurityHeader($request, $response);
+        $this->addFrameOptionsHeader($response);
+        $this->addContentTypeOptionsHeader($response);
+        $this->addReferrerPolicyHeader($response);
         $this->addContentSecurityPolicyHeader($response);
 
         return $response;
@@ -64,6 +67,26 @@ class SecurityHeaders
         );
     }
 
+    protected function addFrameOptionsHeader(Response $response): void
+    {
+        $response->headers->set(
+            'X-Frame-Options',
+            config('security.x_frame_options', 'SAMEORIGIN')
+        );
+    }
+
+    protected function addContentTypeOptionsHeader(Response $response): void
+    {
+        $response->headers->set('X-Content-Type-Options', 'nosniff');
+    }
+
+    protected function addReferrerPolicyHeader(Response $response): void
+    {
+        $response->headers->set(
+            'Referrer-Policy',
+            config('security.referrer_policy', 'strict-origin-when-cross-origin')
+        );
+    }
 
     protected function addContentSecurityPolicyHeader(Response $response): void
     {
@@ -83,7 +106,7 @@ class SecurityHeaders
             $directives[] = trim(sprintf('%s %s', $directive, implode(' ', array_unique($values))));
         }
 
-        if (!empty($directives)) {
+        if (! empty($directives)) {
             $response->headers->set('Content-Security-Policy', implode('; ', $directives));
         }
     }
