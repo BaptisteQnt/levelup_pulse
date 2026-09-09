@@ -20,6 +20,10 @@ class RegisteredUserController extends Controller
 
     private const RGPD_CONSENT_LABEL = 'J’accepte que mes données personnelles soient traitées conformément à la politique de confidentialité.';
 
+    private const MINIMUM_AGE_ERROR = 'Vous devez avoir au moins 18 ans pour créer un compte.';
+
+    private const RGPD_CONSENT_ERROR = 'Vous devez accepter le traitement de vos données personnelles.';
+
     /**
      * Show the registration page.
      */
@@ -28,6 +32,8 @@ class RegisteredUserController extends Controller
         return Inertia::render('auth/Register', [
             'over18DeclarationLabel' => self::OVER_18_DECLARATION_LABEL,
             'rgpdConsentLabel' => self::RGPD_CONSENT_LABEL,
+            'minimumAgeError' => self::MINIMUM_AGE_ERROR,
+            'rgpdConsentError' => self::RGPD_CONSENT_ERROR,
         ]);
     }
 
@@ -47,15 +53,16 @@ class RegisteredUserController extends Controller
             'city' => 'nullable|string|max:255',
             'cp' => 'nullable|string|max:10',
             'country' => 'nullable|string|max:100',
-            'age' => 'nullable|integer|min:1|max:120',
+            'age' => 'nullable|integer|min:18|max:120',
             'password' => ['required', new CnilPassword()],
             'over_18_declared' => ['required', 'accepted'],
             'rgpd_consent' => ['required', 'accepted'],
         ], [
-            'over_18_declared.required' => 'Vous devez déclarer avoir 18 ans ou plus.',
-            'over_18_declared.accepted' => 'Vous devez déclarer avoir 18 ans ou plus.',
-            'rgpd_consent.required' => 'Vous devez accepter le traitement de vos données personnelles.',
-            'rgpd_consent.accepted' => 'Vous devez accepter le traitement de vos données personnelles.',
+            'age.min' => self::MINIMUM_AGE_ERROR,
+            'over_18_declared.required' => self::MINIMUM_AGE_ERROR,
+            'over_18_declared.accepted' => self::MINIMUM_AGE_ERROR,
+            'rgpd_consent.required' => self::RGPD_CONSENT_ERROR,
+            'rgpd_consent.accepted' => self::RGPD_CONSENT_ERROR,
         ]);
 
         $username = $request->filled('username')

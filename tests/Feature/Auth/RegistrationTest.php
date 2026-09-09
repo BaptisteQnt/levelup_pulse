@@ -48,3 +48,20 @@ test('registration requires both consents', function (array $payload, string $fi
     'majority declaration is missing' => [['over_18_declared' => false], 'over_18_declared'],
     'RGPD consent is missing' => [['rgpd_consent' => false], 'rgpd_consent'],
 ]);
+
+test('a user under 18 cannot register', function () {
+    $response = $this->post('/register', [
+        'email' => 'minor@example.com',
+        'age' => 17,
+        'password' => 'Password123!',
+        'password_confirmation' => 'Password123!',
+        'over_18_declared' => true,
+        'rgpd_consent' => true,
+    ]);
+
+    $response->assertSessionHasErrors([
+        'age' => 'Vous devez avoir au moins 18 ans pour créer un compte.',
+    ]);
+    $this->assertGuest();
+    $this->assertDatabaseMissing('users', ['email' => 'minor@example.com']);
+});

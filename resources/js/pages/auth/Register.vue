@@ -8,9 +8,11 @@ import AuthBase from '@/layouts/AuthLayout.vue';
 import { Head, Link, useForm } from '@inertiajs/vue3';
 import { LoaderCircle } from 'lucide-vue-next';
 
-defineProps<{
+const props = defineProps<{
     over18DeclarationLabel: string;
     rgpdConsentLabel: string;
+    minimumAgeError: string;
+    rgpdConsentError: string;
 }>();
 
 const form = useForm({
@@ -21,6 +23,20 @@ const form = useForm({
 });
 
 const submit = () => {
+    form.clearErrors('over_18_declared', 'rgpd_consent');
+
+    if (!form.over_18_declared) {
+        form.setError('over_18_declared', props.minimumAgeError);
+    }
+
+    if (!form.rgpd_consent) {
+        form.setError('rgpd_consent', props.rgpdConsentError);
+    }
+
+    if (!form.over_18_declared || !form.rgpd_consent) {
+        return;
+    }
+
     form.post(route('register'), {
         onFinish: () => form.reset('password'),
     });
@@ -51,7 +67,6 @@ const submit = () => {
                             id="over_18_declared"
                             v-model="form.over_18_declared"
                             type="checkbox"
-                            required
                             class="mt-1 h-4 w-4 shrink-0 rounded border-input text-primary focus:ring-primary"
                         />
                         <span>{{ over18DeclarationLabel }}</span>
@@ -65,7 +80,6 @@ const submit = () => {
                             id="rgpd_consent"
                             v-model="form.rgpd_consent"
                             type="checkbox"
-                            required
                             class="mt-1 h-4 w-4 shrink-0 rounded border-input text-primary focus:ring-primary"
                         />
                         <span>
@@ -87,7 +101,7 @@ const submit = () => {
                     </a>
                 </div>
 
-                <Button type="submit" class="mt-4 w-full" :disabled="form.processing || !form.over_18_declared || !form.rgpd_consent">
+                <Button type="submit" class="mt-4 w-full" :disabled="form.processing">
                     <LoaderCircle v-if="form.processing" class="h-4 w-4 animate-spin" />
                     Créer mon compte
                 </Button>
