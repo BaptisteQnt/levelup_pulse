@@ -16,12 +16,19 @@ use Inertia\Response;
 
 class RegisteredUserController extends Controller
 {
+    private const OVER_18_DECLARATION_LABEL = 'Je déclare avoir 18 ans ou plus.';
+
+    private const RGPD_CONSENT_LABEL = 'J’accepte que mes données personnelles soient traitées conformément à la politique de confidentialité.';
+
     /**
      * Show the registration page.
      */
     public function create(): Response
     {
-        return Inertia::render('auth/Register');
+        return Inertia::render('auth/Register', [
+            'over18DeclarationLabel' => self::OVER_18_DECLARATION_LABEL,
+            'rgpdConsentLabel' => self::RGPD_CONSENT_LABEL,
+        ]);
     }
 
     /**
@@ -42,6 +49,13 @@ class RegisteredUserController extends Controller
             'country' => 'nullable|string|max:100',
             'age' => 'nullable|integer|min:1|max:120',
             'password' => ['required', new CnilPassword()],
+            'over_18_declared' => ['required', 'accepted'],
+            'rgpd_consent' => ['required', 'accepted'],
+        ], [
+            'over_18_declared.required' => 'Vous devez déclarer avoir 18 ans ou plus.',
+            'over_18_declared.accepted' => 'Vous devez déclarer avoir 18 ans ou plus.',
+            'rgpd_consent.required' => 'Vous devez accepter le traitement de vos données personnelles.',
+            'rgpd_consent.accepted' => 'Vous devez accepter le traitement de vos données personnelles.',
         ]);
 
         $username = $request->filled('username')
@@ -58,7 +72,7 @@ class RegisteredUserController extends Controller
             ? $request->string('name')->value()
             : Str::title(str_replace(['_', '-'], ' ', $username));
 
-        $age = $request->integer('age') ?? 18;
+        $age = $request->filled('age') ? $request->integer('age') : 18;
 
         $user = User::create([
             'name' => $name,
@@ -71,6 +85,12 @@ class RegisteredUserController extends Controller
             'country' => $request->input('country'),
             'age' => $age,
             'password' => Hash::make($request->password),
+            'over_18_declared' => true,
+            'over_18_declaration_label' => self::OVER_18_DECLARATION_LABEL,
+            'over_18_declared_at' => now(),
+            'rgpd_consent' => true,
+            'rgpd_consent_label' => self::RGPD_CONSENT_LABEL,
+            'rgpd_consented_at' => now(),
         ]);
 
         event(new Registered($user));

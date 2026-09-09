@@ -5,12 +5,19 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import AuthBase from '@/layouts/AuthLayout.vue';
-import { Head, useForm } from '@inertiajs/vue3';
+import { Head, Link, useForm } from '@inertiajs/vue3';
 import { LoaderCircle } from 'lucide-vue-next';
+
+defineProps<{
+    over18DeclarationLabel: string;
+    rgpdConsentLabel: string;
+}>();
 
 const form = useForm({
     email: '',
     password: '',
+    over_18_declared: false,
+    rgpd_consent: false,
 });
 
 const submit = () => {
@@ -38,6 +45,39 @@ const submit = () => {
                     <InputError :message="form.errors.password" />
                 </div>
 
+                <div class="grid gap-2">
+                    <label for="over_18_declared" class="flex cursor-pointer items-start gap-3 text-sm leading-relaxed">
+                        <input
+                            id="over_18_declared"
+                            v-model="form.over_18_declared"
+                            type="checkbox"
+                            required
+                            class="mt-1 h-4 w-4 shrink-0 rounded border-input text-primary focus:ring-primary"
+                        />
+                        <span>{{ over18DeclarationLabel }}</span>
+                    </label>
+                    <InputError :message="form.errors.over_18_declared" />
+                </div>
+
+                <div class="grid gap-2">
+                    <label for="rgpd_consent" class="flex cursor-pointer items-start gap-3 text-sm leading-relaxed">
+                        <input
+                            id="rgpd_consent"
+                            v-model="form.rgpd_consent"
+                            type="checkbox"
+                            required
+                            class="mt-1 h-4 w-4 shrink-0 rounded border-input text-primary focus:ring-primary"
+                        />
+                        <span>
+                            {{ rgpdConsentLabel }}
+                            <Link :href="route('legal.privacy')" class="font-medium text-primary underline underline-offset-4">
+                                Consulter la politique de confidentialité
+                            </Link>
+                        </span>
+                    </label>
+                    <InputError :message="form.errors.rgpd_consent" />
+                </div>
+
                 <div class="mt-4 space-y-2">
                     <a href="/auth/google/redirect" class="inline-flex w-full justify-center rounded border px-3 py-2">
                         Continuer avec Google
@@ -47,7 +87,7 @@ const submit = () => {
                     </a>
                 </div>
 
-                <Button type="submit" class="mt-4 w-full" :disabled="form.processing">
+                <Button type="submit" class="mt-4 w-full" :disabled="form.processing || !form.over_18_declared || !form.rgpd_consent">
                     <LoaderCircle v-if="form.processing" class="h-4 w-4 animate-spin" />
                     Créer mon compte
                 </Button>

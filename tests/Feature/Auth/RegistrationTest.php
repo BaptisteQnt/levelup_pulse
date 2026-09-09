@@ -14,8 +14,37 @@ test('new users can register', function () {
         'email' => 'test@example.com',
         'password' => 'Password123!',
         'password_confirmation' => 'Password123!',
+        'over_18_declared' => true,
+        'rgpd_consent' => true,
     ]);
 
     $this->assertAuthenticated();
     $response->assertRedirect(route('dashboard', absolute: false));
+
+    $user = \App\Models\User::where('email', 'test@example.com')->firstOrFail();
+
+    expect($user->over_18_declared)->toBeTrue()
+        ->and($user->age)->toBe(18)
+        ->and($user->over_18_declaration_label)->toBe('Je déclare avoir 18 ans ou plus.')
+        ->and($user->over_18_declared_at)->not->toBeNull()
+        ->and($user->rgpd_consent)->toBeTrue()
+        ->and($user->rgpd_consent_label)->toBe('J’accepte que mes données personnelles soient traitées conformément à la politique de confidentialité.')
+        ->and($user->rgpd_consented_at)->not->toBeNull();
 });
+
+test('registration requires both consents', function (array $payload, string $field) {
+    $response = $this->post('/register', [
+        'email' => 'test@example.com',
+        'password' => 'Password123!',
+        'password_confirmation' => 'Password123!',
+        'over_18_declared' => true,
+        'rgpd_consent' => true,
+        ...$payload,
+    ]);
+
+    $response->assertSessionHasErrors($field);
+    $this->assertGuest();
+})->with([
+    'majority declaration is missing' => [['over_18_declared' => false], 'over_18_declared'],
+    'RGPD consent is missing' => [['rgpd_consent' => false], 'rgpd_consent'],
+]);
