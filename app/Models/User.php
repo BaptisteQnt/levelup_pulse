@@ -127,6 +127,11 @@ class User extends Authenticatable implements MustVerifyEmail
         return $this->hasMany(DataErasureRequest::class);
     }
 
+    public function iotDevices(): HasMany
+    {
+        return $this->hasMany(IotDevice::class);
+    }
+
     public function getIsSubscribedAttribute(): bool
     {
         return $this->subscribed('default');

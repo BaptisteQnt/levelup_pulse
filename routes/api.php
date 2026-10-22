@@ -1,12 +1,22 @@
 <?php
 
 use App\Http\Controllers\API\AuthTokenController;
-use App\Http\Controllers\API\GameRatingController as ApiGameRatingController;
-use App\Http\Controllers\API\StatsController;
 use App\Http\Controllers\API\CompatibilityScanHardwareController;
+use App\Http\Controllers\API\GameRatingController as ApiGameRatingController;
+use App\Http\Controllers\API\IotTelemetryController;
+use App\Http\Controllers\API\StatsController;
 use Illuminate\Support\Facades\Route;
 
 Route::name('api.')->group(function () {
+    Route::post('internal/iot/v1/telemetry', [IotTelemetryController::class, 'store'])
+        ->middleware([
+            'iot.request',
+            'throttle:iot-telemetry-ip',
+            'iot.device',
+            'throttle:iot-telemetry-device',
+        ])
+        ->name('internal.iot.v1.telemetry.store');
+
     Route::post('compatibility-scans/{compatibilityScan}/hardware', [CompatibilityScanHardwareController::class, 'store'])
         ->middleware('throttle:compatibility-scan-upload')
         ->name('compatibility-scans.hardware.store');

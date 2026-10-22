@@ -1,5 +1,7 @@
 <?php
 
+use App\Http\Middleware\AuthenticateIotDevice;
+use App\Http\Middleware\EnsureIotTelemetryRequest;
 use App\Http\Middleware\EnsureUserIsAdmin;
 use App\Http\Middleware\EnsureUserCanAccessSecurity;
 use App\Http\Middleware\EnsureUserIsEditor;
@@ -48,6 +50,8 @@ return Application::configure(basePath: dirname(__DIR__))
             'editor' => EnsureUserIsEditor::class,
             'security' => EnsureUserCanAccessSecurity::class,
             'profile.complete' => \App\Http\Middleware\EnsureProfileIsComplete::class,
+            'iot.request' => EnsureIotTelemetryRequest::class,
+            'iot.device' => AuthenticateIotDevice::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions) {

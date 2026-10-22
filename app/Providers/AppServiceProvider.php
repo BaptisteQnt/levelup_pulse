@@ -3,7 +3,9 @@
 namespace App\Providers;
 
 use App\Contracts\CompatibilityAiProvider;
+use App\Http\Middleware\AuthenticateIotDevice;
 use App\Models\CompatibilityScan;
+use App\Models\IotDevice;
 use App\Services\DeeplTranslator;
 use App\Services\OpenAiCompatibilityProvider;
 use App\Services\Translator;
@@ -44,6 +46,19 @@ class AppServiceProvider extends ServiceProvider
 
         RateLimiter::for('article-ai-corrections', function (Request $request) {
             return Limit::perHour(20)->by((string) ($request->user()?->id ?? $request->ip()));
+        });
+
+        RateLimiter::for('iot-telemetry-ip', function (Request $request) {
+            return Limit::perMinute(max(1, (int) config('iot.telemetry.ip_rate_limit_per_minute', 120)))
+                ->by('iot-ip:'.$request->ip());
+        });
+
+        RateLimiter::for('iot-telemetry-device', function (Request $request) {
+            $device = $request->attributes->get(AuthenticateIotDevice::REQUEST_ATTRIBUTE);
+            $deviceKey = $device instanceof IotDevice ? (string) $device->id : $request->ip();
+
+            return Limit::perMinute(max(1, (int) config('iot.telemetry.rate_limit_per_minute', 30)))
+                ->by('iot-device:'.$deviceKey);
         });
 
         // Enregistre le driver "discord" pour Socialite
