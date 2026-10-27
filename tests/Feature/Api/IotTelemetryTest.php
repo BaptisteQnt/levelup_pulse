@@ -2,11 +2,13 @@
 
 namespace Tests\Feature\Api;
 
+use App\Jobs\AnalyzeIotTelemetry;
 use App\Models\IotDevice;
 use App\Models\User;
 use Carbon\Carbon;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Queue;
 use Illuminate\Support\Facades\RateLimiter;
 use Tests\TestCase;
 
@@ -58,6 +60,24 @@ class IotTelemetryTest extends TestCase
             'iot_device_id' => $device->id,
             'measured_at' => null,
         ]);
+    }
+
+    public function test_new_measurement_queues_ai_analysis_when_enabled(): void
+    {
+        Queue::fake();
+        config(['iot.ai.enabled' => true]);
+        $device = $this->createDevice();
+
+        $response = $this->withToken(self::TOKEN)->postJson(self::ENDPOINT, $this->payload());
+
+        $response->assertCreated();
+        $measurement = $device->telemetryMeasurements()->firstOrFail();
+
+        $this->assertDatabaseHas('iot_telemetry_ai_analyses', [
+            'iot_telemetry_measurement_id' => $measurement->id,
+            'status' => 'pending',
+        ]);
+        Queue::assertPushed(AnalyzeIotTelemetry::class, fn (AnalyzeIotTelemetry $job) => $job->measurementId === $measurement->id);
     }
 
     public function test_missing_token_is_rejected(): void

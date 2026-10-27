@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { CircleCheck, Droplets, GripHorizontal, Minus, RefreshCw, Thermometer, TriangleAlert } from 'lucide-vue-next';
+import { BrainCircuit, CircleCheck, Droplets, GripHorizontal, LoaderCircle, Minus, RefreshCw, Thermometer, TriangleAlert } from 'lucide-vue-next';
 import { computed, nextTick, onBeforeUnmount, onMounted, ref } from 'vue';
 
 export interface IotTelemetryReading {
@@ -12,6 +12,17 @@ export interface IotTelemetryReading {
     message: string;
     safe_temperature_min: number;
     safe_temperature_max: number;
+    ai_analysis: {
+        status: 'pending' | 'processing' | 'completed' | 'failed';
+        reliability: 'reliable' | 'suspicious' | 'unknown' | null;
+        approved_for_use: boolean | null;
+        risk_level: 'low' | 'moderate' | 'high' | 'critical' | 'unknown' | null;
+        risk_summary: string | null;
+        reliability_reason: string | null;
+        recommendations: string[];
+        disclaimer: string | null;
+        analyzed_at: string | null;
+    } | null;
 }
 
 const props = defineProps<{
@@ -31,6 +42,35 @@ let dragging: { pointerX: number; pointerY: number; widgetX: number; widgetY: nu
 
 const isDangerous = computed(() => reading.value.status === 'danger');
 const statusTitle = computed(() => (isDangerous.value ? 'Température dangereuse' : 'Situation normale'));
+const aiAnalysis = computed(() => reading.value.ai_analysis);
+const aiIsPending = computed(() => ['pending', 'processing'].includes(aiAnalysis.value?.status ?? ''));
+const reliabilityLabel = computed(() => {
+    if (aiAnalysis.value?.reliability === 'reliable') return 'Mesure exploitable';
+    if (aiAnalysis.value?.reliability === 'suspicious') return 'Mesure suspecte';
+    return 'Fiabilité indéterminée';
+});
+const riskLabel = computed(() => {
+    const labels = {
+        low: 'Risque faible',
+        moderate: 'Risque modéré',
+        high: 'Risque élevé',
+        critical: 'Risque critique',
+        unknown: 'Risque indéterminé',
+    };
+
+    return labels[aiAnalysis.value?.risk_level ?? 'unknown'];
+});
+const riskClass = computed(() => {
+    const classes = {
+        low: 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900 dark:text-emerald-100',
+        moderate: 'bg-amber-100 text-amber-900 dark:bg-amber-900 dark:text-amber-100',
+        high: 'bg-orange-100 text-orange-900 dark:bg-orange-900 dark:text-orange-100',
+        critical: 'bg-red-500 text-white',
+        unknown: 'bg-slate-200 text-slate-800 dark:bg-slate-700 dark:text-slate-100',
+    };
+
+    return classes[aiAnalysis.value?.risk_level ?? 'unknown'];
+});
 const readingTime = computed(() => {
     const value = reading.value.measured_at ?? reading.value.received_at;
 
@@ -127,7 +167,11 @@ const refresh = async () => {
         if (!response.ok) return;
 
         const payload = (await response.json()) as { data: IotTelemetryReading | null };
-        if (payload.data) reading.value = payload.data;
+        if (payload.data) {
+            reading.value = payload.data;
+            await nextTick();
+            clampPosition();
+        }
     } catch {
         // La dernière valeur reste affichée si le réseau est momentanément indisponible.
     } finally {
@@ -187,7 +231,7 @@ onBeforeUnmount(() => {
     <aside
         ref="widget"
         :style="widgetStyle"
-        class="iot-widget fixed z-50 w-[calc(100vw-2rem)] max-w-sm overflow-hidden rounded-2xl border shadow-2xl backdrop-blur-xl"
+        class="iot-widget fixed z-50 max-h-[calc(100vh-1rem)] w-[calc(100vw-2rem)] max-w-sm overflow-y-auto rounded-2xl border shadow-2xl backdrop-blur-xl"
         :class="
             isDangerous
                 ? 'border-red-400/70 bg-red-950/95 text-white shadow-red-950/30'
@@ -260,6 +304,45 @@ onBeforeUnmount(() => {
                     <dd class="mt-1 text-2xl font-black">{{ Number(reading.humidity).toLocaleString('fr-FR') }} %</dd>
                 </div>
             </dl>
+
+            <section
+                v-if="aiAnalysis"
+                class="mt-3 rounded-xl border border-current/10 bg-black/5 p-3 dark:bg-white/10"
+                aria-label="Analyse par intelligence artificielle"
+            >
+                <div class="flex items-center gap-2">
+                    <BrainCircuit class="size-4 shrink-0" aria-hidden="true" />
+                    <p class="text-xs font-black tracking-wide uppercase">Analyse IA</p>
+                    <span
+                        v-if="aiAnalysis.status === 'completed'"
+                        class="ml-auto rounded-full px-2 py-1 text-[0.62rem] font-black"
+                        :class="riskClass"
+                    >
+                        {{ riskLabel }}
+                    </span>
+                </div>
+
+                <div v-if="aiIsPending" class="mt-2 flex items-center gap-2 text-xs opacity-70">
+                    <LoaderCircle class="size-4 animate-spin" aria-hidden="true" />
+                    Analyse de la fiabilité et des risques en cours…
+                </div>
+
+                <div v-else-if="aiAnalysis.status === 'failed'" class="mt-2 text-xs leading-relaxed opacity-75">
+                    Analyse IA indisponible. La mesure brute reste conservée, mais elle n’est pas validée pour exploitation.
+                </div>
+
+                <div v-else-if="aiAnalysis.status === 'completed'" class="mt-2 space-y-2 text-xs leading-relaxed">
+                    <p v-if="aiAnalysis.risk_summary">{{ aiAnalysis.risk_summary }}</p>
+                    <div class="rounded-lg bg-black/5 p-2 dark:bg-white/5">
+                        <p class="font-black">{{ reliabilityLabel }}</p>
+                        <p v-if="aiAnalysis.reliability_reason" class="mt-0.5 opacity-70">{{ aiAnalysis.reliability_reason }}</p>
+                    </div>
+                    <ul v-if="aiAnalysis.recommendations.length" class="list-disc space-y-1 pl-4 opacity-80">
+                        <li v-for="recommendation in aiAnalysis.recommendations" :key="recommendation">{{ recommendation }}</li>
+                    </ul>
+                    <p v-if="aiAnalysis.disclaimer" class="text-[0.65rem] opacity-55">{{ aiAnalysis.disclaimer }}</p>
+                </div>
+            </section>
 
             <div class="mt-3 flex items-center justify-between gap-3 text-[0.68rem] opacity-60">
                 <span>Relevé le {{ readingTime }}</span>

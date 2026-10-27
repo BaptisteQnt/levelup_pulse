@@ -17,4 +17,15 @@ return [
         'safe_temperature_min' => (float) env('IOT_SAFE_TEMPERATURE_MIN', 5),
         'safe_temperature_max' => (float) env('IOT_SAFE_TEMPERATURE_MAX', 35),
     ],
+
+    'ai' => [
+        'enabled' => (bool) env('IOT_AI_ENABLED', false),
+        'api_key' => env('OPENAI_API_KEY'),
+        'model' => env('IOT_AI_MODEL', env('OPENAI_MODEL', 'gpt-5.4-mini')),
+        'reasoning_effort' => env('IOT_AI_REASONING_EFFORT', 'low'),
+        'max_output_tokens' => (int) env('IOT_AI_MAX_OUTPUT_TOKENS', 1_000),
+        'timeout_seconds' => (int) env('IOT_AI_TIMEOUT_SECONDS', 60),
+        'history_size' => (int) env('IOT_AI_HISTORY_SIZE', 10),
+        'minimum_history_size' => (int) env('IOT_AI_MIN_HISTORY_SIZE', 3),
+    ],
 ];

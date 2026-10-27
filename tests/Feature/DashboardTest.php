@@ -3,6 +3,7 @@
 use App\Models\Article;
 use App\Models\Game;
 use App\Models\IotDevice;
+use App\Models\IotTelemetryAiAnalysis;
 use App\Models\IotTelemetryMeasurement;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -32,10 +33,21 @@ test('dashboard exposes only the latest telemetry owned by the authenticated use
     $ownDevice = IotDevice::factory()->for($user)->create(['device_id' => 'CAPTEUR-SALON']);
     $otherDevice = IotDevice::factory()->create(['device_id' => 'CAPTEUR-VOISIN']);
 
-    IotTelemetryMeasurement::factory()->for($ownDevice, 'device')->create([
+    $ownMeasurement = IotTelemetryMeasurement::factory()->for($ownDevice, 'device')->create([
         'temperature' => 23.40,
         'humidity' => 48.20,
         'received_at' => now()->subMinute(),
+    ]);
+    $ownMeasurement->aiAnalysis()->create([
+        'status' => IotTelemetryAiAnalysis::STATUS_COMPLETED,
+        'reliability' => IotTelemetryAiAnalysis::RELIABILITY_RELIABLE,
+        'approved_for_use' => true,
+        'risk_level' => IotTelemetryAiAnalysis::RISK_LOW,
+        'risk_summary' => 'Conditions thermiques normales.',
+        'reliability_reason' => 'Mesure cohérente avec la série récente.',
+        'recommendations' => ['Maintenir une ventilation normale.'],
+        'disclaimer' => 'Analyse informative.',
+        'analyzed_at' => now(),
     ]);
     IotTelemetryMeasurement::factory()->for($otherDevice, 'device')->create([
         'temperature' => 49,
@@ -52,6 +64,9 @@ test('dashboard exposes only the latest telemetry owned by the authenticated use
             ->where('latestTelemetry.status', 'safe')
             ->where('latestTelemetry.safe_temperature_min', 5)
             ->where('latestTelemetry.safe_temperature_max', 35)
+            ->where('latestTelemetry.ai_analysis.reliability', 'reliable')
+            ->where('latestTelemetry.ai_analysis.approved_for_use', true)
+            ->where('latestTelemetry.ai_analysis.risk_level', 'low')
         );
 });
 

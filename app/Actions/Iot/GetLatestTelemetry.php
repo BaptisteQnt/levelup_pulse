@@ -17,14 +17,15 @@ class GetLatestTelemetry
      *     status: 'safe'|'danger',
      *     message: string,
      *     safe_temperature_min: float,
-     *     safe_temperature_max: float
+     *     safe_temperature_max: float,
+     *     ai_analysis: array<string, mixed>|null
      * }|null
      */
     public function handle(User $user): ?array
     {
         $measurement = IotTelemetryMeasurement::query()
             ->select('iot_telemetry_measurements.*')
-            ->with('device:id,device_id')
+            ->with(['device:id,device_id', 'aiAnalysis'])
             ->whereHas('device', fn ($query) => $query->where('user_id', $user->id))
             ->latest('received_at')
             ->latest('id')
@@ -51,6 +52,29 @@ class GetLatestTelemetry
                 : 'Température normale : aucune conséquence détectée.',
             'safe_temperature_min' => $safeMin,
             'safe_temperature_max' => $safeMax,
+            'ai_analysis' => $this->presentAiAnalysis($measurement->aiAnalysis),
+        ];
+    }
+
+    /**
+     * @return array<string, mixed>|null
+     */
+    private function presentAiAnalysis(mixed $analysis): ?array
+    {
+        if (! $analysis) {
+            return null;
+        }
+
+        return [
+            'status' => $analysis->status,
+            'reliability' => $analysis->reliability,
+            'approved_for_use' => $analysis->approved_for_use,
+            'risk_level' => $analysis->risk_level,
+            'risk_summary' => $analysis->risk_summary,
+            'reliability_reason' => $analysis->reliability_reason,
+            'recommendations' => $analysis->recommendations ?? [],
+            'disclaimer' => $analysis->disclaimer,
+            'analyzed_at' => $analysis->analyzed_at?->toIso8601String(),
         ];
     }
 }

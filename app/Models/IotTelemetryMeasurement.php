@@ -6,6 +6,7 @@ use Database\Factories\IotTelemetryMeasurementFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class IotTelemetryMeasurement extends Model
 {
@@ -35,5 +36,10 @@ class IotTelemetryMeasurement extends Model
     public function device(): BelongsTo
     {
         return $this->belongsTo(IotDevice::class, 'iot_device_id');
+    }
+
+    public function aiAnalysis(): HasOne
+    {
+        return $this->hasOne(IotTelemetryAiAnalysis::class, 'iot_telemetry_measurement_id');
     }
 }

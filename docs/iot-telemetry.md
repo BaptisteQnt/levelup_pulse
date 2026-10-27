@@ -1,5 +1,7 @@
 # Intégration des capteurs IoT
 
+Ce document décrit le contrat entre le capteur et l'API. L'architecture, les protections et l'affichage déjà implémentés côté application sont détaillés dans [`iot-application-securite.md`](iot-application-securite.md).
+
 ## Architecture et sécurité
 
 L'API IoT est distincte de l'authentification Sanctum des utilisateurs. Chaque appareil appartient à un utilisateur LevelUp et possède un token aléatoire dédié. Seul le SHA-256 de ce token à haute entropie est conservé dans `iot_devices`; le token en clair est affiché une seule fois par la commande de provisionnement.
@@ -106,11 +108,20 @@ IOT_HUMIDITY_MIN=0
 IOT_HUMIDITY_MAX=100
 IOT_SAFE_TEMPERATURE_MIN=5
 IOT_SAFE_TEMPERATURE_MAX=35
+IOT_AI_ENABLED=false
+IOT_AI_MODEL=gpt-5.4-mini
+IOT_AI_REASONING_EFFORT=low
+IOT_AI_MAX_OUTPUT_TOKENS=1000
+IOT_AI_TIMEOUT_SECONDS=60
+IOT_AI_HISTORY_SIZE=10
+IOT_AI_MIN_HISTORY_SIZE=3
 ```
 
 `IOT_TOKEN_BYTES` est ramené à 32 octets minimum par le code. Avec une mesure toutes les 10 secondes, la limite de 30 requêtes/minute par appareil laisse une marge de rafale tout en freinant les abus. Une seconde limite de 120 requêtes/minute s'applique par adresse IP.
 
 Les deux variables `IOT_SAFE_TEMPERATURE_*` définissent la plage considérée comme normale dans le widget du tableau de bord. Une mesure en dehors de cette plage déclenche l'état visuel « température dangereuse ».
+
+Lorsque `IOT_AI_ENABLED=true`, chaque nouvelle mesure acceptée crée une analyse asynchrone de sa plausibilité et des risques liés au fait de jouer dans ces conditions. La mesure brute est toujours conservée ; seul le résultat IA décide si elle est marquée comme exploitable. Le worker de file d'attente Laravel doit fonctionner. Les détails et limites figurent dans [`iot-application-securite.md`](iot-application-securite.md#analyse-ia-des-risques-et-de-la-fiabilité).
 
 ## Adaptation du firmware ESP32
 

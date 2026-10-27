@@ -3,11 +3,13 @@
 namespace App\Providers;
 
 use App\Contracts\CompatibilityAiProvider;
+use App\Contracts\IotTelemetryAiProvider;
 use App\Http\Middleware\AuthenticateIotDevice;
 use App\Models\CompatibilityScan;
 use App\Models\IotDevice;
 use App\Services\DeeplTranslator;
 use App\Services\OpenAiCompatibilityProvider;
+use App\Services\OpenAiIotTelemetryProvider;
 use App\Services\Translator;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Request;
@@ -23,6 +25,7 @@ class AppServiceProvider extends ServiceProvider
     {
         $this->app->singleton(Translator::class, fn () => DeeplTranslator::fromConfig());
         $this->app->bind(CompatibilityAiProvider::class, OpenAiCompatibilityProvider::class);
+        $this->app->bind(IotTelemetryAiProvider::class, OpenAiIotTelemetryProvider::class);
     }
 
     public function boot(): void

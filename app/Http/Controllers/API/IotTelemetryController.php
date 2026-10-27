@@ -5,10 +5,14 @@ namespace App\Http\Controllers\API;
 use App\Http\Controllers\Controller;
 use App\Http\Middleware\AuthenticateIotDevice;
 use App\Http\Requests\Iot\StoreTelemetryRequest;
+use App\Jobs\AnalyzeIotTelemetry;
 use App\Models\IotDevice;
+use App\Models\IotTelemetryAiAnalysis;
 use App\Models\IotTelemetryMeasurement;
 use App\Services\IngestIotTelemetry;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Support\Facades\Log;
+use Throwable;
 
 class IotTelemetryController extends Controller
 {
@@ -38,6 +42,10 @@ class IotTelemetryController extends Controller
         $measurement = $result['measurement'];
         $status = $result['status'] === IngestIotTelemetry::STATUS_ACCEPTED ? 201 : 200;
 
+        if ($status === 201 && config('iot.ai.enabled')) {
+            $this->queueAiAnalysis($measurement);
+        }
+
         return response()->json([
             'status' => $result['status'],
             'data' => [
@@ -48,6 +56,22 @@ class IotTelemetryController extends Controller
                 'received_at' => $measurement->received_at->toIso8601String(),
             ],
         ], $status)->header('Cache-Control', 'no-store');
+    }
+
+    private function queueAiAnalysis(IotTelemetryMeasurement $measurement): void
+    {
+        $measurement->aiAnalysis()->firstOrCreate([], [
+            'status' => IotTelemetryAiAnalysis::STATUS_PENDING,
+        ]);
+
+        try {
+            AnalyzeIotTelemetry::dispatch($measurement->id);
+        } catch (Throwable $exception) {
+            Log::error('IoT AI analysis could not be queued.', [
+                'measurement_id' => $measurement->id,
+                'exception' => $exception::class,
+            ]);
+        }
     }
 
     private function conflict(string $code, string $message): JsonResponse

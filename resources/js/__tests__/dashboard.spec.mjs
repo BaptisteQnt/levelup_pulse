@@ -121,6 +121,17 @@ describe('Editorial dashboard', () => {
             message: 'Température dangereuse : vérifiez immédiatement l’environnement du capteur.',
             safe_temperature_min: 5,
             safe_temperature_max: 35,
+            ai_analysis: {
+              status: 'completed',
+              reliability: 'suspicious',
+              approved_for_use: false,
+              risk_level: 'high',
+              risk_summary: 'La chaleur peut augmenter la fatigue pendant une session prolongée.',
+              reliability_reason: 'La hausse est brutale par rapport aux derniers relevés.',
+              recommendations: ['Aérer la pièce.', 'Vérifier avec un second thermomètre.'],
+              disclaimer: 'Analyse informative.',
+              analyzed_at: '2026-10-27T12:30:10+01:00',
+            },
           },
         },
       ),
@@ -134,6 +145,9 @@ describe('Editorial dashboard', () => {
     expect(html).toContain('Température dangereuse');
     expect(html).toContain('38,5 °C');
     expect(html).toContain('47 %');
+    expect(html).toContain('Analyse IA');
+    expect(html).toContain('Risque élevé');
+    expect(html).toContain('Mesure suspecte');
   });
 
   it('renders intentional empty states when there is no editorial content', async () => {
