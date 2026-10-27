@@ -106,6 +106,36 @@ describe('Editorial dashboard', () => {
     expect(html).toContain('Demandes RGPD');
   });
 
+  it('shows the movable IoT card with the interpreted sensor state', async () => {
+    globalThis.__INERTIA_PAGE__ = {
+      props: pageProps(
+        { is_admin: false, is_super_admin: false },
+        {
+          latestTelemetry: {
+            device_id: 'CAPTEUR-SALON',
+            temperature: 38.5,
+            humidity: 47,
+            measured_at: '2026-10-27T12:30:00+01:00',
+            received_at: '2026-10-27T12:30:02+01:00',
+            status: 'danger',
+            message: 'Température dangereuse : vérifiez immédiatement l’environnement du capteur.',
+            safe_temperature_min: 5,
+            safe_temperature_max: 35,
+          },
+        },
+      ),
+      url: '/dashboard',
+    };
+
+    const { html } = await renderDashboard();
+
+    expect(html).toContain('Capteur en direct');
+    expect(html).toContain('CAPTEUR-SALON');
+    expect(html).toContain('Température dangereuse');
+    expect(html).toContain('38,5 °C');
+    expect(html).toContain('47 %');
+  });
+
   it('renders intentional empty states when there is no editorial content', async () => {
     globalThis.__INERTIA_PAGE__ = {
       props: pageProps(null, { latestArticles: [], recentGames: [] }),

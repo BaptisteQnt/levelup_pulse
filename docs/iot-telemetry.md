@@ -104,9 +104,13 @@ IOT_TEMPERATURE_MIN=-40
 IOT_TEMPERATURE_MAX=80
 IOT_HUMIDITY_MIN=0
 IOT_HUMIDITY_MAX=100
+IOT_SAFE_TEMPERATURE_MIN=5
+IOT_SAFE_TEMPERATURE_MAX=35
 ```
 
 `IOT_TOKEN_BYTES` est ramené à 32 octets minimum par le code. Avec une mesure toutes les 10 secondes, la limite de 30 requêtes/minute par appareil laisse une marge de rafale tout en freinant les abus. Une seconde limite de 120 requêtes/minute s'applique par adresse IP.
+
+Les deux variables `IOT_SAFE_TEMPERATURE_*` définissent la plage considérée comme normale dans le widget du tableau de bord. Une mesure en dehors de cette plage déclenche l'état visuel « température dangereuse ».
 
 ## Adaptation du firmware ESP32
 

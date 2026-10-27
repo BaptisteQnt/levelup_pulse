@@ -2,11 +2,14 @@
 
 use App\Models\Article;
 use App\Models\Game;
+use App\Models\IotDevice;
+use App\Models\IotTelemetryMeasurement;
 use App\Models\User;
+use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Storage;
 use Inertia\Testing\AssertableInertia as Assert;
 
-uses(\Illuminate\Foundation\Testing\RefreshDatabase::class);
+uses(RefreshDatabase::class);
 
 test('guests are redirected to the login page', function () {
     $response = $this->get('/dashboard');
@@ -19,6 +22,58 @@ test('authenticated users can visit the dashboard', function () {
 
     $response = $this->get('/dashboard');
     $response->assertStatus(200);
+});
+
+test('dashboard exposes only the latest telemetry owned by the authenticated user', function () {
+    config()->set('iot.display.safe_temperature_min', 5);
+    config()->set('iot.display.safe_temperature_max', 35);
+
+    $user = User::factory()->create();
+    $ownDevice = IotDevice::factory()->for($user)->create(['device_id' => 'CAPTEUR-SALON']);
+    $otherDevice = IotDevice::factory()->create(['device_id' => 'CAPTEUR-VOISIN']);
+
+    IotTelemetryMeasurement::factory()->for($ownDevice, 'device')->create([
+        'temperature' => 23.40,
+        'humidity' => 48.20,
+        'received_at' => now()->subMinute(),
+    ]);
+    IotTelemetryMeasurement::factory()->for($otherDevice, 'device')->create([
+        'temperature' => 49,
+        'received_at' => now(),
+    ]);
+
+    $this->actingAs($user)
+        ->get('/dashboard')
+        ->assertOk()
+        ->assertInertia(fn (Assert $page) => $page
+            ->where('latestTelemetry.device_id', 'CAPTEUR-SALON')
+            ->where('latestTelemetry.temperature', 23.4)
+            ->where('latestTelemetry.humidity', 48.2)
+            ->where('latestTelemetry.status', 'safe')
+            ->where('latestTelemetry.safe_temperature_min', 5)
+            ->where('latestTelemetry.safe_temperature_max', 35)
+        );
+});
+
+test('latest telemetry endpoint flags a dangerous temperature and stays private', function () {
+    $user = User::factory()->create();
+    $device = IotDevice::factory()->for($user)->create(['device_id' => 'CAPTEUR-BUREAU']);
+
+    IotTelemetryMeasurement::factory()->for($device, 'device')->create([
+        'temperature' => 41.25,
+        'humidity' => 37,
+    ]);
+
+    $response = $this->actingAs($user)->getJson(route('iot.telemetry.latest'));
+
+    $response
+        ->assertOk()
+        ->assertHeader('Cache-Control')
+        ->assertJsonPath('data.device_id', 'CAPTEUR-BUREAU')
+        ->assertJsonPath('data.temperature', 41.25)
+        ->assertJsonPath('data.status', 'danger');
+
+    expect($response->headers->get('Cache-Control'))->toContain('no-store');
 });
 
 test('home exposes the latest published editorial content and recent games', function () {

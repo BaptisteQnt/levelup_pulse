@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import IotTelemetryWidget, { type IotTelemetryReading } from '@/components/IotTelemetryWidget.vue';
 import AppHeaderLayout from '@/layouts/app/AppHeaderLayout.vue';
 import { gameCoverUrl } from '@/lib/game-images';
 import { fetchDashboardStats, type DashboardStats } from '@/lib/stats';
@@ -45,6 +46,7 @@ interface DashboardPageProps extends SharedData {
     recentGames?: RecentDashboardGame[];
     latestArticles?: LatestArticle[];
     stats?: DashboardStats;
+    latestTelemetry?: IotTelemetryReading | null;
 }
 
 const page = usePage<DashboardPageProps>();
@@ -56,6 +58,7 @@ const featureArticle = computed(() => latestArticles.value[0] ?? null);
 const secondaryArticles = computed(() => latestArticles.value.slice(1));
 const recentGames = computed(() => page.props.recentGames ?? []);
 const currentAnnouncement = computed(() => page.props.announcement ?? null);
+const latestTelemetry = computed(() => page.props.latestTelemetry ?? null);
 
 const adminLinks = computed<AdminAction[]>(() => [
     {
@@ -548,6 +551,8 @@ const statItems = computed(() => [
             </div>
         </div>
     </AppHeaderLayout>
+
+    <IotTelemetryWidget v-if="latestTelemetry" :initial-reading="latestTelemetry" :endpoint="route('iot.telemetry.latest')" />
 </template>
 
 <style scoped>

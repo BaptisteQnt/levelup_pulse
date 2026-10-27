@@ -12,4 +12,9 @@ return [
         'humidity_min' => (float) env('IOT_HUMIDITY_MIN', 0),
         'humidity_max' => (float) env('IOT_HUMIDITY_MAX', 100),
     ],
+
+    'display' => [
+        'safe_temperature_min' => (float) env('IOT_SAFE_TEMPERATURE_MIN', 5),
+        'safe_temperature_max' => (float) env('IOT_SAFE_TEMPERATURE_MAX', 35),
+    ],
 ];

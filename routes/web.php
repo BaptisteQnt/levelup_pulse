@@ -1,6 +1,7 @@
 <?php
 
 use App\Actions\Dashboard\GetDashboardStats;
+use App\Actions\Iot\GetLatestTelemetry;
 use App\Http\Controllers\ArticleController;
 use App\Http\Controllers\ArticleAiController;
 use App\Http\Controllers\ArticleReactionController;
@@ -12,6 +13,7 @@ use App\Http\Controllers\GameController;
 use App\Http\Controllers\Admin\AnnouncementController;
 use App\Http\Controllers\Admin\PowersController;
 use App\Http\Controllers\GameRatingController;
+use App\Http\Controllers\IotTelemetryReadingController;
 use App\Http\Controllers\SubscriptionController;
 use Laravel\Cashier\Http\Controllers\WebhookController;
 use Illuminate\Http\Request;
@@ -84,6 +86,7 @@ $dashboardPage = function (Request $request) {
         ->all();
 
     $stats = app(GetDashboardStats::class)->handle();
+    $latestTelemetry = $user ? app(GetLatestTelemetry::class)->handle($user) : null;
 
     return Inertia::render('Dashboard', [
         'isSubscribed'  => $subscription?->active() ?? false,
@@ -99,12 +102,17 @@ $dashboardPage = function (Request $request) {
         'recentGames'   => $recentGames,
         'latestArticles' => $latestArticles,
         'stats'         => $stats,
+        'latestTelemetry' => $latestTelemetry,
     ]);
 };
 
 Route::get('/', $dashboardPage)->name('home');
 
 Route::middleware(['auth', 'verified'])->get('/dashboard', $dashboardPage)->name('dashboard');
+
+Route::middleware(['auth', 'throttle:60,1'])
+    ->get('/iot/telemetry/latest', IotTelemetryReadingController::class)
+    ->name('iot.telemetry.latest');
 
 Route::middleware('auth')->group(function () {
     Route::get('/games', [GameController::class, 'index'])->name('games.index');
