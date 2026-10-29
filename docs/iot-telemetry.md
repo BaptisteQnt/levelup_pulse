@@ -28,6 +28,14 @@ php artisan iot:device renew LUP-ESP32-001
 
 `renew` invalide immédiatement l'ancien token et affiche le nouveau une seule fois. Un appareil révoqué doit être renouvelé avant de pouvoir être réutilisé. Un appareil désactivé conserve son secret mais ne peut plus publier. La rotation du token ne remet pas `sequence` à zéro.
 
+Si le capteur a perdu son compteur (reflashage, NVS effacée) et reçoit des `409` en boucle, resynchroniser :
+
+```bash
+php artisan iot:device resync LUP-ESP32-001
+```
+
+Cette commande supprime les mesures de l'appareil (et leurs analyses IA) et remet `last_sequence` à `NULL`; le capteur peut alors repartir de 0 ou 1.
+
 ## Contrat HTTP
 
 `POST /api/internal/iot/v1/telemetry`

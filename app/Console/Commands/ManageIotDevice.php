@@ -6,13 +6,15 @@ use App\Models\IotDevice;
 use App\Models\User;
 use App\Services\IotDeviceTokenManager;
 use Illuminate\Console\Command;
+use Illuminate\Support\Facades\DB;
 
 class ManageIotDevice extends Command
 {
     protected $signature = 'iot:device
-        {action : create, renew, revoke, disable or enable}
+        {action : create, renew, revoke, disable, enable or resync}
         {device_id : Public device identifier}
-        {--user= : Owner user ID or username; required when creating}';
+        {--user= : Owner user ID or username; required when creating}
+        {--force : Skip the confirmation prompt when resynchronising}';
 
     protected $description = 'Provision and manage an IoT device credential';
 
@@ -33,8 +35,35 @@ class ManageIotDevice extends Command
             'revoke' => $this->revokeToken($deviceId),
             'disable' => $this->setActive($deviceId, false),
             'enable' => $this->setActive($deviceId, true),
+            'resync' => $this->resync($deviceId),
             default => $this->invalidAction(),
         };
+    }
+
+    private function resync(string $deviceId): int
+    {
+        $device = $this->findDevice($deviceId);
+
+        if (! $device) {
+            return self::FAILURE;
+        }
+
+        $count = $device->telemetryMeasurements()->count();
+
+        if (! $this->option('force') && ! $this->confirm("This deletes {$count} measurement(s) (and their AI analyses) of {$deviceId} and resets its sequence counter. Continue?")) {
+            $this->warn('Aborted.');
+
+            return self::FAILURE;
+        }
+
+        DB::transaction(function () use ($device): void {
+            $device->telemetryMeasurements()->delete();
+            $device->update(['last_sequence' => null]);
+        });
+
+        $this->info("Device {$deviceId} resynchronised: the sensor may restart from sequence 0 or 1.");
+
+        return self::SUCCESS;
     }
 
     private function createDevice(string $deviceId, IotDeviceTokenManager $tokens): int
@@ -158,7 +187,7 @@ class ManageIotDevice extends Command
 
     private function invalidAction(): int
     {
-        $this->error('Action must be one of: create, renew, revoke, disable, enable.');
+        $this->error('Action must be one of: create, renew, revoke, disable, enable, resync.');
 
         return self::FAILURE;
     }
