@@ -331,3 +331,53 @@ it('exposes the last completed verdict when the latest measurement was not analy
         ->assertJsonPath('data.ai_analysis.status', 'not_required')
         ->assertJsonPath('data.last_ai_verdict.reliability', 'reliable');
 });
+
+it('quarantines an implausible jump but keeps the measurement and the thermal alert', function () {
+    config(['iot.ai.enabled' => false]);
+    $device = iotAiDevice();
+    iotAiMeasurement($device, 1, 22.0, 50.0, now()->subSeconds(10));
+    $device->update(['last_sequence' => 1]);
+
+    iotAiPost(['sequence' => 2, 'temperature' => 40.0])->assertCreated();
+
+    $stored = $device->telemetryMeasurements()->where('sequence', 2)->firstOrFail();
+
+    expect($stored->quarantine_reason)->toBe('temperature_jump');
+
+    $this->actingAs($device->user)
+        ->getJson(route('iot.telemetry.latest'))
+        ->assertOk()
+        ->assertJsonPath('data.quarantined', true)
+        ->assertJsonPath('data.status', 'danger');
+});
+
+it('does not quarantine a normal variation or a measurement after a long gap', function () {
+    config(['iot.ai.enabled' => false]);
+    $device = iotAiDevice();
+    iotAiMeasurement($device, 1, 22.0, 50.0, now()->subSeconds(10));
+    $device->update(['last_sequence' => 1]);
+
+    iotAiPost(['sequence' => 2, 'temperature' => 24.0])->assertCreated();
+    expect($device->telemetryMeasurements()->where('sequence', 2)->firstOrFail()->quarantine_reason)->toBeNull();
+
+    $device->telemetryMeasurements()->update(['received_at' => now()->subHour()]);
+    iotAiPost(['sequence' => 3, 'temperature' => 45.0])->assertCreated();
+    expect($device->telemetryMeasurements()->where('sequence', 3)->firstOrFail()->quarantine_reason)->toBeNull();
+});
+
+it('never approves a quarantined measurement even if the AI calls it reliable', function () {
+    $device = iotAiDevice();
+    foreach (range(1, 3) as $sequence) {
+        iotAiMeasurement($device, $sequence);
+    }
+    $measurement = iotAiMeasurement($device, 4);
+    $measurement->update(['quarantine_reason' => 'temperature_jump']);
+    $measurement->aiAnalysis()->create(['status' => 'pending']);
+
+    (new AnalyzeIotTelemetry($measurement->id))->handle(iotAiProvider());
+
+    $analysis = $measurement->aiAnalysis()->firstOrFail();
+
+    expect($analysis->reliability)->toBe('reliable')
+        ->and($analysis->approved_for_use)->toBeFalse();
+});

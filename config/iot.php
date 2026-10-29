@@ -11,6 +11,9 @@ return [
         'temperature_max' => (float) env('IOT_TEMPERATURE_MAX', 80),
         'humidity_min' => (float) env('IOT_HUMIDITY_MIN', 0),
         'humidity_max' => (float) env('IOT_HUMIDITY_MAX', 100),
+        'quarantine_temperature_delta' => (float) env('IOT_QUARANTINE_TEMPERATURE_DELTA', 10),
+        'quarantine_humidity_delta' => (float) env('IOT_QUARANTINE_HUMIDITY_DELTA', 40),
+        'quarantine_max_gap_seconds' => (int) env('IOT_QUARANTINE_MAX_GAP_SECONDS', 120),
     ],
 
     'display' => [

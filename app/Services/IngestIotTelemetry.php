@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Models\IotDevice;
 use App\Models\IotTelemetryMeasurement;
 use Carbon\CarbonImmutable;
+use Carbon\CarbonInterface;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
@@ -73,6 +74,7 @@ class IngestIotTelemetry
                 'sequence' => $payload['sequence'],
                 'measured_at' => $measuredAt,
                 'received_at' => $receivedAt,
+                'quarantine_reason' => $this->quarantineReason($device, $payload, $receivedAt),
             ]);
 
             $device->update([
@@ -88,6 +90,33 @@ class IngestIotTelemetry
 
             return ['status' => self::STATUS_ACCEPTED, 'measurement' => $measurement];
         }, 3);
+    }
+
+    /**
+     * Deterministic plausibility check: a jump too large for the elapsed time is stored but quarantined.
+     *
+     * @param  array{temperature: int|float|string, humidity: int|float|string}  $payload
+     */
+    private function quarantineReason(IotDevice $device, array $payload, CarbonInterface $receivedAt): ?string
+    {
+        $previous = $device->telemetryMeasurements()->latest('id')->first();
+
+        if (! $previous || $previous->received_at->diffInSeconds($receivedAt, true) > (int) config('iot.telemetry.quarantine_max_gap_seconds', 120)) {
+            return null;
+        }
+
+        $temperatureDelta = (float) config('iot.telemetry.quarantine_temperature_delta', 10);
+        $humidityDelta = (float) config('iot.telemetry.quarantine_humidity_delta', 40);
+
+        if ($temperatureDelta > 0 && abs((float) $payload['temperature'] - (float) $previous->temperature) >= $temperatureDelta) {
+            return IotTelemetryMeasurement::QUARANTINE_TEMPERATURE_JUMP;
+        }
+
+        if ($humidityDelta > 0 && abs((float) $payload['humidity'] - (float) $previous->humidity) >= $humidityDelta) {
+            return IotTelemetryMeasurement::QUARANTINE_HUMIDITY_JUMP;
+        }
+
+        return null;
     }
 
     /**

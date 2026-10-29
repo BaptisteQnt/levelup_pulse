@@ -48,6 +48,8 @@ class GetLatestTelemetry
             'device_id' => $measurement->device->device_id,
             'temperature' => $temperature,
             'humidity' => (float) $measurement->humidity,
+            'quarantined' => $measurement->isQuarantined(),
+            'quarantine_reason' => $measurement->quarantine_reason,
             'measured_at' => $measurement->measured_at?->toIso8601String(),
             'received_at' => $measurement->received_at?->toIso8601String(),
             'device_last_seen_at' => $measurement->device->last_seen_at?->toIso8601String(),

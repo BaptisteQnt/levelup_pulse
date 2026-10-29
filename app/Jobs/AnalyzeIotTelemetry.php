@@ -113,7 +113,7 @@ class AnalyzeIotTelemetry implements ShouldBeUnique, ShouldQueue
             ->update([
                 'status' => IotTelemetryAiAnalysis::STATUS_COMPLETED,
                 'reliability' => $reliability,
-                'approved_for_use' => $reliability === IotTelemetryAiAnalysis::RELIABILITY_RELIABLE,
+                'approved_for_use' => $reliability === IotTelemetryAiAnalysis::RELIABILITY_RELIABLE && ! $measurement->isQuarantined(),
                 'risk_level' => $riskLevel,
                 'risk_summary' => (string) ($result['risk_summary'] ?? ''),
                 'reliability_reason' => $reliabilityReason,

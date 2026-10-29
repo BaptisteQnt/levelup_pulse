@@ -214,9 +214,15 @@ Lorsque `IOT_AI_ENABLED=false`, aucune analyse n'est créée et le widget ne pr�
 
 Un job réserve l'analyse par un `UPDATE` conditionnel (`pending`/`failed` → `processing`) et enregistre son résultat uniquement si elle est encore `processing`. Deux jobs concurrents ou un résultat tardif ne peuvent donc pas écraser une analyse terminée. Une erreur transitoire remet l'analyse en `pending` pour que la nouvelle tentative de la file puisse la traiter. L'analyse est rattachée à la mesure par son identifiant unique (`iot_telemetry_measurement_id`).
 
+### Mise en quarantaine déterministe (sans IA)
+
+À l'ingestion, Laravel compare la mesure au relevé précédent du même appareil. Si l'intervalle est inférieur à `IOT_QUARANTINE_MAX_GAP_SECONDS` et que l'écart atteint `IOT_QUARANTINE_TEMPERATURE_DELTA` °C ou `IOT_QUARANTINE_HUMIDITY_DELTA` points, la mesure est enregistrée avec `quarantine_reason` (`temperature_jump` ou `humidity_jump`). Elle reste visible et déclenche l'alerte thermique, mais `approved_for_use` reste faux même si l'IA la juge `reliable`. Le widget l'affiche avec un avertissement. Le contrat HTTP est inchangé (réponse 201).
+
+Limite : seul le relevé précédent sert de référence, donc un changement réel et durable ne met en quarantaine que sa première mesure.
+
 ### Critères d'approbation (`approved_for_use`)
 
-`approved_for_use` vaut `true` uniquement si l'analyse est `completed`, le verdict est `reliable` et l'historique minimal (`IOT_AI_MIN_HISTORY_SIZE`) est disponible. Dans tous les autres cas (`pending`, `processing`, `failed`, `suspicious`, `unknown`, historique insuffisant), la valeur n'est pas `true`. Elle ne conditionne ni l'affichage de la mesure brute ni l'alerte thermique ; aucun traitement métier ne la consomme encore.
+`approved_for_use` vaut `true` uniquement si l'analyse est `completed`, le verdict est `reliable`, l'historique minimal (`IOT_AI_MIN_HISTORY_SIZE`) est disponible et la mesure n'est pas en quarantaine. Dans tous les autres cas (`pending`, `processing`, `failed`, `suspicious`, `unknown`, historique insuffisant), la valeur n'est pas `true`. Elle ne conditionne ni l'affichage de la mesure brute ni l'alerte thermique ; aucun traitement métier ne la consomme encore.
 
 ### Stratégie de déclenchement et maîtrise des coûts
 

@@ -20,6 +20,8 @@ export interface IotTelemetryReading {
     device_id: string;
     temperature: number;
     humidity: number;
+    quarantined?: boolean;
+    quarantine_reason?: 'temperature_jump' | 'humidity_jump' | null;
     measured_at: string | null;
     received_at: string | null;
     device_last_seen_at: string | null;
@@ -357,6 +359,15 @@ onBeforeUnmount(() => {
                     <dd class="mt-1 text-2xl font-black">{{ Number(reading.humidity).toLocaleString('fr-FR') }} %</dd>
                 </div>
             </dl>
+
+            <p
+                v-if="reading.quarantined"
+                class="mt-3 rounded-lg bg-amber-500/20 px-2 py-1.5 text-xs font-bold text-amber-900 dark:text-amber-100"
+            >
+                Mesure mise en quarantaine : variation anormalement brusque
+                {{ reading.quarantine_reason === 'humidity_jump' ? 'de l’humidité' : 'de la température' }}. Elle est conservée mais exclue des
+                données qualifiées.
+            </p>
 
             <section
                 v-if="reading.ai_enabled"

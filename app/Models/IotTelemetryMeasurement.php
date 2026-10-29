@@ -20,7 +20,17 @@ class IotTelemetryMeasurement extends Model
         'sequence',
         'measured_at',
         'received_at',
+        'quarantine_reason',
     ];
+
+    public const QUARANTINE_TEMPERATURE_JUMP = 'temperature_jump';
+
+    public const QUARANTINE_HUMIDITY_JUMP = 'humidity_jump';
+
+    public function isQuarantined(): bool
+    {
+        return $this->quarantine_reason !== null;
+    }
 
     protected function casts(): array
     {
