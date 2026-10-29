@@ -64,7 +64,7 @@ Le token du capteur n'est donc jamais envoyé au navigateur et la session utilis
 9. Une transaction verrouille l'appareil, contrôle la séquence et enregistre la mesure avec l'heure de réception du serveur.
 10. Pour un utilisateur connecté, le tableau de bord récupère uniquement la dernière mesure appartenant à l'un de ses appareils.
 11. Lorsque l'analyse IA est activée, une tâche asynchrone évalue la fiabilité et le risque sans ralentir la réponse au capteur.
-12. Le serveur classe aussi immédiatement la température avec les seuils déterministes, puis le widget affiche les résultats et interroge le point de lecture toutes les 15 secondes.
+12. Le serveur classe aussi immédiatement la température avec les seuils déterministes, puis le widget affiche les résultats et interroge le point de lecture toutes les 5 secondes.
 
 ## Protections de l'ingestion
 
@@ -179,9 +179,10 @@ Le widget :
 
 - affiche la température, l'humidité, le capteur et l'heure du relevé ;
 - affiche un état vert normal ou une alerte rouge ;
-- actualise les données toutes les 15 secondes et lors du retour sur un onglet visible ;
+- actualise les données toutes les 5 secondes et lors du retour sur un onglet visible ;
 - permet une actualisation manuelle ;
 - conserve la dernière valeur affichée en cas de panne réseau ;
+- affiche l'heure du dernier contact du capteur, l'heure de synchronisation de l'interface et les erreurs de rafraîchissement ;
 - est déplaçable à la souris, au tactile et avec les touches fléchées ;
 - mémorise uniquement sa position dans `localStorage`, jamais les mesures ni les secrets ;
 - utilise les interpolations Vue, qui échappent le texte, sans insertion HTML brute ;
@@ -202,7 +203,7 @@ Le fonctionnement retenu est donc :
 5. l'IA classe la fiabilité et le risque ;
 6. `approved_for_use` passe à `true` uniquement si le verdict de fiabilité vaut `reliable` et si l'historique minimal est disponible.
 
-Une mesure `suspicious`, `unknown` ou en échec reste en base pour l'audit, mais n'est pas approuvée pour une exploitation dérivée. Un doublon idempotent ne déclenche pas une nouvelle analyse.
+Une mesure `suspicious`, `unknown` ou en échec reste en base pour l'audit, mais n'est pas approuvée pour une exploitation dérivée. Un doublon possédant déjà une analyse terminée n'est pas retraité. En revanche, un ancien doublon sans analyse peut créer le travail IA manquant afin de rattraper les mesures reçues avant l'activation de la fonction.
 
 Par défaut, trois mesures antérieures du même capteur sont exigées. Si le modèle répond `reliable` avant ce minimum, l'application remplace ce verdict par `unknown`. Ce garde-fou empêche d'approuver une première valeur isolée sur la seule appréciation du modèle.
 
@@ -279,7 +280,7 @@ En particulier :
 - l'humidité est affichée mais n'est pas encore classée ;
 - aucune alerte de mesure périmée ou de capteur hors ligne n'est actuellement calculée ;
 - si le réseau tombe, la dernière mesure reste visible avec son heure ;
-- le rafraîchissement est réalisé par interrogation toutes les 15 secondes, pas par WebSocket ;
+- le rafraîchissement est réalisé par interrogation toutes les 5 secondes, pas par WebSocket ;
 - aucune notification externe, sirène, SMS ou courriel n'est déclenché ;
 - les mesures ne disposent pas d'un chiffrement applicatif individuel en base ; leur protection au repos dépend de la base et de l'infrastructure ;
 - aucune politique automatique de rétention ou de purge n'est encore appliquée ;

@@ -42,7 +42,7 @@ class IotTelemetryController extends Controller
         $measurement = $result['measurement'];
         $status = $result['status'] === IngestIotTelemetry::STATUS_ACCEPTED ? 201 : 200;
 
-        if ($status === 201 && config('iot.ai.enabled')) {
+        if (config('iot.ai.enabled')) {
             $this->queueAiAnalysis($measurement);
         }
 
@@ -60,9 +60,16 @@ class IotTelemetryController extends Controller
 
     private function queueAiAnalysis(IotTelemetryMeasurement $measurement): void
     {
-        $measurement->aiAnalysis()->firstOrCreate([], [
+        $analysis = $measurement->aiAnalysis()->firstOrCreate([], [
             'status' => IotTelemetryAiAnalysis::STATUS_PENDING,
         ]);
+
+        if (! $analysis->wasRecentlyCreated && in_array($analysis->status, [
+            IotTelemetryAiAnalysis::STATUS_PROCESSING,
+            IotTelemetryAiAnalysis::STATUS_COMPLETED,
+        ], true)) {
+            return;
+        }
 
         try {
             AnalyzeIotTelemetry::dispatch($measurement->id);

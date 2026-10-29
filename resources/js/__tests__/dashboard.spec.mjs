@@ -117,10 +117,12 @@ describe('Editorial dashboard', () => {
             humidity: 47,
             measured_at: '2026-10-27T12:30:00+01:00',
             received_at: '2026-10-27T12:30:02+01:00',
+            device_last_seen_at: '2026-10-27T12:30:15+01:00',
             status: 'danger',
             message: 'Température dangereuse : vérifiez immédiatement l’environnement du capteur.',
             safe_temperature_min: 5,
             safe_temperature_max: 35,
+            ai_enabled: true,
             ai_analysis: {
               status: 'completed',
               reliability: 'suspicious',

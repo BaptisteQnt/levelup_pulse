@@ -14,10 +14,12 @@ class GetLatestTelemetry
      *     humidity: float,
      *     measured_at: string|null,
      *     received_at: string|null,
+     *     device_last_seen_at: string|null,
      *     status: 'safe'|'danger',
      *     message: string,
      *     safe_temperature_min: float,
      *     safe_temperature_max: float,
+     *     ai_enabled: bool,
      *     ai_analysis: array<string, mixed>|null
      * }|null
      */
@@ -25,7 +27,7 @@ class GetLatestTelemetry
     {
         $measurement = IotTelemetryMeasurement::query()
             ->select('iot_telemetry_measurements.*')
-            ->with(['device:id,device_id', 'aiAnalysis'])
+            ->with(['device:id,device_id,last_seen_at', 'aiAnalysis'])
             ->whereHas('device', fn ($query) => $query->where('user_id', $user->id))
             ->latest('received_at')
             ->latest('id')
@@ -46,12 +48,14 @@ class GetLatestTelemetry
             'humidity' => (float) $measurement->humidity,
             'measured_at' => $measurement->measured_at?->toIso8601String(),
             'received_at' => $measurement->received_at?->toIso8601String(),
+            'device_last_seen_at' => $measurement->device->last_seen_at?->toIso8601String(),
             'status' => $isDangerous ? 'danger' : 'safe',
             'message' => $isDangerous
                 ? 'Température dangereuse : vérifiez immédiatement l’environnement du capteur.'
                 : 'Température normale : aucune conséquence détectée.',
             'safe_temperature_min' => $safeMin,
             'safe_temperature_max' => $safeMax,
+            'ai_enabled' => (bool) config('iot.ai.enabled'),
             'ai_analysis' => $this->presentAiAnalysis($measurement->aiAnalysis),
         ];
     }

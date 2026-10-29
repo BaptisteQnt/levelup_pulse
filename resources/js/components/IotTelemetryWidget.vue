@@ -8,10 +8,12 @@ export interface IotTelemetryReading {
     humidity: number;
     measured_at: string | null;
     received_at: string | null;
+    device_last_seen_at: string | null;
     status: 'safe' | 'danger';
     message: string;
     safe_temperature_min: number;
     safe_temperature_max: number;
+    ai_enabled: boolean;
     ai_analysis: {
         status: 'pending' | 'processing' | 'completed' | 'failed';
         reliability: 'reliable' | 'suspicious' | 'unknown' | null;
@@ -37,6 +39,8 @@ const position = ref({ x: 16, y: 80 });
 const positioned = ref(false);
 const collapsed = ref(false);
 const isRefreshing = ref(false);
+const refreshError = ref<string | null>(null);
+const lastRefreshAt = ref<Date | null>(null);
 let pollTimer: ReturnType<typeof setInterval> | null = null;
 let dragging: { pointerX: number; pointerY: number; widgetX: number; widgetY: number } | null = null;
 
@@ -83,6 +87,24 @@ const readingTime = computed(() => {
         minute: '2-digit',
     }).format(new Date(value));
 });
+const deviceLastSeenTime = computed(() =>
+    reading.value.device_last_seen_at
+        ? new Intl.DateTimeFormat('fr-FR', {
+              hour: '2-digit',
+              minute: '2-digit',
+              second: '2-digit',
+          }).format(new Date(reading.value.device_last_seen_at))
+        : null,
+);
+const lastRefreshTime = computed(() =>
+    lastRefreshAt.value
+        ? new Intl.DateTimeFormat('fr-FR', {
+              hour: '2-digit',
+              minute: '2-digit',
+              second: '2-digit',
+          }).format(lastRefreshAt.value)
+        : null,
+);
 
 const widgetStyle = computed(() =>
     positioned.value ? { left: `${position.value.x}px`, top: `${position.value.y}px` } : { right: '1rem', top: '5rem' },
@@ -157,6 +179,7 @@ const refresh = async () => {
     if (isRefreshing.value || document.hidden) return;
 
     isRefreshing.value = true;
+    refreshError.value = null;
 
     try {
         const response = await fetch(props.endpoint, {
@@ -164,7 +187,9 @@ const refresh = async () => {
             credentials: 'same-origin',
         });
 
-        if (!response.ok) return;
+        if (!response.ok) {
+            throw new Error(`Réponse HTTP ${response.status}`);
+        }
 
         const payload = (await response.json()) as { data: IotTelemetryReading | null };
         if (payload.data) {
@@ -172,8 +197,9 @@ const refresh = async () => {
             await nextTick();
             clampPosition();
         }
-    } catch {
-        // La dernière valeur reste affichée si le réseau est momentanément indisponible.
+        lastRefreshAt.value = new Date();
+    } catch (error) {
+        refreshError.value = error instanceof Error ? error.message : 'Rafraîchissement impossible';
     } finally {
         isRefreshing.value = false;
     }
@@ -205,6 +231,7 @@ onMounted(async () => {
     }
 
     positioned.value = true;
+    lastRefreshAt.value = new Date();
     await nextTick();
     clampPosition();
 
@@ -213,7 +240,8 @@ onMounted(async () => {
     window.addEventListener('pointercancel', stopDragging);
     window.addEventListener('resize', handleResize);
     document.addEventListener('visibilitychange', handleVisibilityChange);
-    pollTimer = setInterval(() => void refresh(), 15_000);
+    void refresh();
+    pollTimer = setInterval(() => void refresh(), 5_000);
 });
 
 onBeforeUnmount(() => {
@@ -306,7 +334,7 @@ onBeforeUnmount(() => {
             </dl>
 
             <section
-                v-if="aiAnalysis"
+                v-if="reading.ai_enabled"
                 class="mt-3 rounded-xl border border-current/10 bg-black/5 p-3 dark:bg-white/10"
                 aria-label="Analyse par intelligence artificielle"
             >
@@ -322,7 +350,11 @@ onBeforeUnmount(() => {
                     </span>
                 </div>
 
-                <div v-if="aiIsPending" class="mt-2 flex items-center gap-2 text-xs opacity-70">
+                <div v-if="!aiAnalysis" class="mt-2 text-xs leading-relaxed opacity-75">
+                    Aucune analyse n’est liée à cette mesure. Elle a peut-être été reçue avant l’activation de l’IA.
+                </div>
+
+                <div v-else-if="aiIsPending" class="mt-2 flex items-center gap-2 text-xs opacity-70">
                     <LoaderCircle class="size-4 animate-spin" aria-hidden="true" />
                     Analyse de la fiabilité et des risques en cours…
                 </div>
@@ -344,8 +376,16 @@ onBeforeUnmount(() => {
                 </div>
             </section>
 
+            <p v-if="refreshError" class="mt-3 rounded-lg bg-red-500/15 px-2 py-1.5 text-[0.68rem] font-bold text-red-700 dark:text-red-200">
+                Rafraîchissement en échec : {{ refreshError }}
+            </p>
+
             <div class="mt-3 flex items-center justify-between gap-3 text-[0.68rem] opacity-60">
-                <span>Relevé le {{ readingTime }}</span>
+                <span>
+                    Relevé le {{ readingTime }}
+                    <template v-if="deviceLastSeenTime"> · capteur vu à {{ deviceLastSeenTime }}</template>
+                    <template v-if="lastRefreshTime"> · synchronisé à {{ lastRefreshTime }}</template>
+                </span>
                 <button
                     type="button"
                     class="inline-flex items-center gap-1 rounded-md p-1 font-bold hover:bg-black/10 focus-visible:ring-2 focus-visible:ring-current focus-visible:outline-none"

@@ -28,9 +28,13 @@ test('authenticated users can visit the dashboard', function () {
 test('dashboard exposes only the latest telemetry owned by the authenticated user', function () {
     config()->set('iot.display.safe_temperature_min', 5);
     config()->set('iot.display.safe_temperature_max', 35);
+    config()->set('iot.ai.enabled', false);
 
     $user = User::factory()->create();
-    $ownDevice = IotDevice::factory()->for($user)->create(['device_id' => 'CAPTEUR-SALON']);
+    $ownDevice = IotDevice::factory()->for($user)->create([
+        'device_id' => 'CAPTEUR-SALON',
+        'last_seen_at' => now(),
+    ]);
     $otherDevice = IotDevice::factory()->create(['device_id' => 'CAPTEUR-VOISIN']);
 
     $ownMeasurement = IotTelemetryMeasurement::factory()->for($ownDevice, 'device')->create([
@@ -61,9 +65,11 @@ test('dashboard exposes only the latest telemetry owned by the authenticated use
             ->where('latestTelemetry.device_id', 'CAPTEUR-SALON')
             ->where('latestTelemetry.temperature', 23.4)
             ->where('latestTelemetry.humidity', 48.2)
+            ->where('latestTelemetry.device_last_seen_at', $ownDevice->last_seen_at->toIso8601String())
             ->where('latestTelemetry.status', 'safe')
             ->where('latestTelemetry.safe_temperature_min', 5)
             ->where('latestTelemetry.safe_temperature_max', 35)
+            ->where('latestTelemetry.ai_enabled', false)
             ->where('latestTelemetry.ai_analysis.reliability', 'reliable')
             ->where('latestTelemetry.ai_analysis.approved_for_use', true)
             ->where('latestTelemetry.ai_analysis.risk_level', 'low')

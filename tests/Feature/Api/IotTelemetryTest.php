@@ -20,6 +20,13 @@ class IotTelemetryTest extends TestCase
 
     private const TOKEN = 'lup_iot_fake_test_token_that_is_never_used_outside_tests';
 
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        config(['iot.ai.enabled' => false]);
+    }
+
     public function test_valid_telemetry_is_stored_with_server_received_time(): void
     {
         $device = $this->createDevice();
@@ -72,6 +79,29 @@ class IotTelemetryTest extends TestCase
 
         $response->assertCreated();
         $measurement = $device->telemetryMeasurements()->firstOrFail();
+
+        $this->assertDatabaseHas('iot_telemetry_ai_analyses', [
+            'iot_telemetry_measurement_id' => $measurement->id,
+            'status' => 'pending',
+        ]);
+        Queue::assertPushed(AnalyzeIotTelemetry::class, fn (AnalyzeIotTelemetry $job) => $job->measurementId === $measurement->id);
+    }
+
+    public function test_duplicate_measurement_queues_a_missing_ai_analysis_when_enabled(): void
+    {
+        Queue::fake();
+        config(['iot.ai.enabled' => true]);
+        $device = $this->createDevice();
+
+        $this->withToken(self::TOKEN)->postJson(self::ENDPOINT, $this->payload())->assertCreated();
+        Queue::fake();
+        $measurement = $device->telemetryMeasurements()->firstOrFail();
+        $measurement->aiAnalysis()->delete();
+
+        $this->withToken(self::TOKEN)
+            ->postJson(self::ENDPOINT, $this->payload())
+            ->assertOk()
+            ->assertJsonPath('status', 'duplicate');
 
         $this->assertDatabaseHas('iot_telemetry_ai_analyses', [
             'iot_telemetry_measurement_id' => $measurement->id,
