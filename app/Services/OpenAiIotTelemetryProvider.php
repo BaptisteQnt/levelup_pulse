@@ -89,6 +89,7 @@ Règles impératives :
 - Utilisez "reliable" seulement lorsque la valeur est plausible et cohérente avec plusieurs relevés récents. Cela signifie "exploitable dans cette application", pas "capteur certifié".
 - Les recommandations doivent être concrètes et prudentes : pause, hydratation, ventilation, éloignement d'une source de chaleur ou vérification avec un second thermomètre selon le cas.
 - En cas de chaleur ou de froid potentiellement dangereux, recommandez de quitter la pièce et de suivre les consignes des autorités locales. Ne minimisez jamais une valeur dangereuse parce qu'elle semble suspecte.
+- Le capteur mesure uniquement la température et l'humidité de l'air à son emplacement : n'affirmez jamais que l'ordinateur ou un composant interne surchauffe.
 - Répondez exclusivement selon le schéma demandé.
 PROMPT;
     }

@@ -10,13 +10,17 @@ use App\Models\IotDevice;
 use App\Models\IotTelemetryAiAnalysis;
 use App\Models\IotTelemetryMeasurement;
 use App\Services\IngestIotTelemetry;
+use App\Services\IotAiAnalysisSelector;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Log;
 use Throwable;
 
 class IotTelemetryController extends Controller
 {
-    public function __construct(private readonly IngestIotTelemetry $ingestTelemetry) {}
+    public function __construct(
+        private readonly IngestIotTelemetry $ingestTelemetry,
+        private readonly IotAiAnalysisSelector $aiSelector,
+    ) {}
 
     public function store(StoreTelemetryRequest $request): JsonResponse
     {
@@ -60,9 +64,20 @@ class IotTelemetryController extends Controller
 
     private function queueAiAnalysis(IotTelemetryMeasurement $measurement): void
     {
-        $analysis = $measurement->aiAnalysis()->firstOrCreate([], [
-            'status' => IotTelemetryAiAnalysis::STATUS_PENDING,
-        ]);
+        $analysis = $measurement->aiAnalysis;
+
+        if (! $analysis) {
+            $reason = $this->aiSelector->reasonFor($measurement);
+
+            if ($reason === null) {
+                return;
+            }
+
+            $analysis = $measurement->aiAnalysis()->firstOrCreate([], [
+                'status' => IotTelemetryAiAnalysis::STATUS_PENDING,
+                'trigger_reason' => $reason,
+            ]);
+        }
 
         if (! $analysis->wasRecentlyCreated && in_array($analysis->status, [
             IotTelemetryAiAnalysis::STATUS_PROCESSING,

@@ -123,13 +123,19 @@ IOT_AI_MAX_OUTPUT_TOKENS=1000
 IOT_AI_TIMEOUT_SECONDS=60
 IOT_AI_HISTORY_SIZE=10
 IOT_AI_MIN_HISTORY_SIZE=3
+IOT_AI_PERIODIC_INTERVAL_MINUTES=15
+IOT_AI_MIN_SECONDS_BETWEEN_ANALYSES=60
+IOT_AI_TRIGGER_ON_THRESHOLD=true
+IOT_AI_TEMPERATURE_SPIKE_DELTA=5
+IOT_AI_HUMIDITY_SPIKE_DELTA=25
+IOT_AI_ANOMALY_DEVIATION=8
 ```
 
 `IOT_TOKEN_BYTES` est ramené à 32 octets minimum par le code. Avec une mesure toutes les 10 secondes, la limite de 30 requêtes/minute par appareil laisse une marge de rafale tout en freinant les abus. Une seconde limite de 120 requêtes/minute s'applique par adresse IP.
 
 Les deux variables `IOT_SAFE_TEMPERATURE_*` définissent la plage considérée comme normale dans le widget du tableau de bord. Une mesure en dehors de cette plage déclenche l'état visuel « température dangereuse ».
 
-Lorsque `IOT_AI_ENABLED=true`, chaque nouvelle mesure acceptée crée une analyse asynchrone de sa plausibilité et des risques liés au fait de jouer dans ces conditions. La mesure brute est toujours conservée ; seul le résultat IA décide si elle est marquée comme exploitable. Le worker de file d'attente Laravel doit fonctionner. Les détails et limites figurent dans [`iot-application-securite.md`](iot-application-securite.md#analyse-ia-des-risques-et-de-la-fiabilité).
+Lorsque `IOT_AI_ENABLED=true`, les mesures acceptées sélectionnées par des règles déterministes (périodique, franchissement de seuil, variation brutale, valeur inhabituelle, avec limitation par appareil) créent une analyse asynchrone de leur plausibilité et des risques liés au fait de jouer dans ces conditions. La mesure brute est toujours conservée ; seul le résultat IA décide si elle est marquée comme exploitable. Le worker de file d'attente Laravel doit fonctionner. Les détails et limites figurent dans [`iot-application-securite.md`](iot-application-securite.md#analyse-ia-des-risques-et-de-la-fiabilité).
 
 ## Adaptation du firmware ESP32
 

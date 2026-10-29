@@ -27,5 +27,11 @@ return [
         'timeout_seconds' => (int) env('IOT_AI_TIMEOUT_SECONDS', 60),
         'history_size' => (int) env('IOT_AI_HISTORY_SIZE', 10),
         'minimum_history_size' => (int) env('IOT_AI_MIN_HISTORY_SIZE', 3),
+        'periodic_interval_minutes' => (int) env('IOT_AI_PERIODIC_INTERVAL_MINUTES', 15),
+        'min_seconds_between_analyses' => (int) env('IOT_AI_MIN_SECONDS_BETWEEN_ANALYSES', 60),
+        'trigger_on_threshold_crossing' => (bool) env('IOT_AI_TRIGGER_ON_THRESHOLD', true),
+        'temperature_spike_delta' => (float) env('IOT_AI_TEMPERATURE_SPIKE_DELTA', 5),
+        'humidity_spike_delta' => (float) env('IOT_AI_HUMIDITY_SPIKE_DELTA', 25),
+        'anomaly_deviation' => (float) env('IOT_AI_ANOMALY_DEVIATION', 8),
     ],
 ];

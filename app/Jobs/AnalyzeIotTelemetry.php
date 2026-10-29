@@ -52,11 +52,35 @@ class AnalyzeIotTelemetry implements ShouldBeUnique, ShouldQueue
             'status' => IotTelemetryAiAnalysis::STATUS_PENDING,
         ]);
 
-        $analysis->update([
-            'status' => IotTelemetryAiAnalysis::STATUS_PROCESSING,
-            'error_code' => null,
-        ]);
+        // Atomic claim: a concurrent job or a finished analysis must never be overwritten.
+        $claimed = IotTelemetryAiAnalysis::query()
+            ->whereKey($analysis->getKey())
+            ->whereIn('status', [IotTelemetryAiAnalysis::STATUS_PENDING, IotTelemetryAiAnalysis::STATUS_FAILED])
+            ->update([
+                'status' => IotTelemetryAiAnalysis::STATUS_PROCESSING,
+                'approved_for_use' => false,
+                'error_code' => null,
+            ]);
 
+        if ($claimed === 0) {
+            return;
+        }
+
+        try {
+            $this->analyzeAndStore($provider, $measurement, $analysis);
+        } catch (Throwable $exception) {
+            // Release the claim so the queue retry can process the measurement again.
+            IotTelemetryAiAnalysis::query()
+                ->whereKey($analysis->getKey())
+                ->where('status', IotTelemetryAiAnalysis::STATUS_PROCESSING)
+                ->update(['status' => IotTelemetryAiAnalysis::STATUS_PENDING]);
+
+            throw $exception;
+        }
+    }
+
+    private function analyzeAndStore(IotTelemetryAiProvider $provider, IotTelemetryMeasurement $measurement, IotTelemetryAiAnalysis $analysis): void
+    {
         $recentMeasurements = $this->recentMeasurements($measurement);
         $result = $provider->analyze(
             $this->measurementPayload($measurement),
@@ -83,19 +107,23 @@ class AnalyzeIotTelemetry implements ShouldBeUnique, ShouldQueue
             $reliabilityReason = "Historique insuffisant : {$minimumHistory} mesures antérieures sont requises avant approbation.";
         }
 
-        $analysis->update([
-            'status' => IotTelemetryAiAnalysis::STATUS_COMPLETED,
-            'reliability' => $reliability,
-            'approved_for_use' => $reliability === IotTelemetryAiAnalysis::RELIABILITY_RELIABLE,
-            'risk_level' => $riskLevel,
-            'risk_summary' => (string) ($result['risk_summary'] ?? ''),
-            'reliability_reason' => $reliabilityReason,
-            'recommendations' => $this->stringList($result['recommendations'] ?? []),
-            'disclaimer' => (string) ($result['disclaimer'] ?? 'Analyse IA informative, sans garantie médicale ni métrologique.'),
-            'model' => $provider->modelName(),
-            'error_code' => null,
-            'analyzed_at' => now(),
-        ]);
+        IotTelemetryAiAnalysis::query()
+            ->whereKey($analysis->getKey())
+            ->where('status', IotTelemetryAiAnalysis::STATUS_PROCESSING)
+            ->update([
+                'status' => IotTelemetryAiAnalysis::STATUS_COMPLETED,
+                'reliability' => $reliability,
+                'approved_for_use' => $reliability === IotTelemetryAiAnalysis::RELIABILITY_RELIABLE,
+                'risk_level' => $riskLevel,
+                'risk_summary' => (string) ($result['risk_summary'] ?? ''),
+                'reliability_reason' => $reliabilityReason,
+                'recommendations' => json_encode($this->stringList($result['recommendations'] ?? []), JSON_UNESCAPED_UNICODE),
+                'disclaimer' => (string) ($result['disclaimer'] ?? 'Analyse IA informative, sans garantie médicale ni métrologique.'),
+                'model' => $provider->modelName(),
+                'error_code' => null,
+                'analyzed_at' => now(),
+                'updated_at' => now(),
+            ]);
     }
 
     public function failed(?Throwable $exception): void

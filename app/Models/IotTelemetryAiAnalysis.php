@@ -15,6 +15,17 @@ class IotTelemetryAiAnalysis extends Model
 
     public const STATUS_FAILED = 'failed';
 
+    /** Pseudo-state exposed by the API when no analysis row exists (never stored). */
+    public const STATE_NOT_REQUIRED = 'not_required';
+
+    public const TRIGGER_PERIODIC = 'periodic';
+
+    public const TRIGGER_THRESHOLD = 'threshold';
+
+    public const TRIGGER_SPIKE = 'spike';
+
+    public const TRIGGER_ANOMALY = 'anomaly';
+
     public const RELIABILITY_RELIABLE = 'reliable';
 
     public const RELIABILITY_SUSPICIOUS = 'suspicious';
@@ -34,6 +45,7 @@ class IotTelemetryAiAnalysis extends Model
     protected $fillable = [
         'iot_telemetry_measurement_id',
         'status',
+        'trigger_reason',
         'reliability',
         'approved_for_use',
         'risk_level',

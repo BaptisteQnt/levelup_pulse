@@ -63,7 +63,7 @@ Le token du capteur n'est donc jamais envoyé au navigateur et la session utilis
 8. Les champs, formats et plages autorisés sont validés. Les champs supplémentaires sont refusés.
 9. Une transaction verrouille l'appareil, contrôle la séquence et enregistre la mesure avec l'heure de réception du serveur.
 10. Pour un utilisateur connecté, le tableau de bord récupère uniquement la dernière mesure appartenant à l'un de ses appareils.
-11. Lorsque l'analyse IA est activée, une tâche asynchrone évalue la fiabilité et le risque sans ralentir la réponse au capteur.
+11. Lorsque l'analyse IA est activée et que les règles de déclenchement la sélectionnent, une tâche asynchrone évalue la cohérence et le risque sans ralentir la réponse au capteur.
 12. Le serveur classe aussi immédiatement la température avec les seuils déterministes, puis le widget affiche les résultats et interroge le point de lecture toutes les 5 secondes.
 
 ## Protections de l'ingestion
@@ -188,6 +188,66 @@ Le widget :
 - utilise les interpolations Vue, qui échappent le texte, sans insertion HTML brute ;
 - expose le changement d'état aux technologies d'assistance avec `status`, `alert` et `aria-live`.
 
+## Séparation des états d'une mesure
+
+Trois informations indépendantes décrivent une mesure :
+
+| Information | Source | Dépend d'OpenAI ? | Rôle |
+|---|---|---|---|
+| Validité technique | Laravel, avant l'enregistrement (authentification, JSON, plages, séquence, débit) | Non | Une mesure invalide est refusée avec les codes HTTP du contrat |
+| État thermique (`safe`/`danger`) | Laravel, à la lecture, avec les seuils `IOT_SAFE_TEMPERATURE_*` | Non | Toujours affiché, quel que soit l'état de l'analyse IA |
+| Analyse de cohérence | Job asynchrone | Oui | Estimation de cohérence à partir de l'historique, jamais une certification du DHT22 |
+
+Le DHT22 mesure uniquement la température et l'humidité de l'air à son emplacement ; ni l'IA ni l'interface n'en déduisent l'état interne de l'ordinateur.
+
+### Cycle de vie de l'analyse
+
+| État exposé | Signification |
+|---|---|
+| `not_required` | État calculé (aucune ligne en base) : l'IA est active mais la mesure n'a pas été sélectionnée. Ce n'est ni `pending` ni `failed`. |
+| `pending` | Sélectionnée, en file d'attente |
+| `processing` | Prise en charge par un job (réservation atomique) |
+| `completed` | Verdict enregistré (`reliable`, `suspicious` ou `unknown`) |
+| `failed` | Tentatives épuisées ; la mesure brute est conservée |
+
+Lorsque `IOT_AI_ENABLED=false`, aucune analyse n'est créée et le widget ne présente pas de section IA. Toute la chaîne d'ingestion et l'alerte thermique fonctionnent sans clé OpenAI.
+
+Un job réserve l'analyse par un `UPDATE` conditionnel (`pending`/`failed` → `processing`) et enregistre son résultat uniquement si elle est encore `processing`. Deux jobs concurrents ou un résultat tardif ne peuvent donc pas écraser une analyse terminée. Une erreur transitoire remet l'analyse en `pending` pour que la nouvelle tentative de la file puisse la traiter. L'analyse est rattachée à la mesure par son identifiant unique (`iot_telemetry_measurement_id`).
+
+### Critères d'approbation (`approved_for_use`)
+
+`approved_for_use` vaut `true` uniquement si l'analyse est `completed`, le verdict est `reliable` et l'historique minimal (`IOT_AI_MIN_HISTORY_SIZE`) est disponible. Dans tous les autres cas (`pending`, `processing`, `failed`, `suspicious`, `unknown`, historique insuffisant), la valeur n'est pas `true`. Elle ne conditionne ni l'affichage de la mesure brute ni l'alerte thermique ; aucun traitement métier ne la consomme encore.
+
+### Stratégie de déclenchement et maîtrise des coûts
+
+La mesure est toujours enregistrée ; l'IA n'est sollicitée que selon des règles déterministes (`app/Services/IotAiAnalysisSelector.php`), évaluées dans cet ordre :
+
+1. **Limitation par appareil** : aucune analyse si une autre a été créée pour le même appareil depuis moins de `IOT_AI_MIN_SECONDS_BETWEEN_ANALYSES` secondes.
+2. **Franchissement de seuil** (`threshold`) : la température sort de la plage sûre alors que le relevé précédent y était.
+3. **Variation brutale** (`spike`) : écart avec le relevé précédent d'au moins `IOT_AI_TEMPERATURE_SPIKE_DELTA` °C ou `IOT_AI_HUMIDITY_SPIKE_DELTA` points d'humidité.
+4. **Valeur inhabituelle** (`anomaly`) : écart d'au moins `IOT_AI_ANOMALY_DEVIATION` °C avec la moyenne des relevés récents.
+5. **Périodique** (`periodic`) : aucune analyse depuis `IOT_AI_PERIODIC_INTERVAL_MINUTES` minutes (ou première mesure de l'appareil).
+
+La raison est stockée dans `iot_telemetry_ai_analyses.trigger_reason`. Un seuil ou une variation survenant pendant la limitation de fréquence n'est pas analysé par l'IA, mais l'alerte thermique déterministe reste affichée. Avec les valeurs par défaut, une mesure toutes les 10 secondes produit environ 96 analyses par jour et par appareil au lieu de 8 640, hors événements.
+
+Le widget affiche en plus le dernier verdict terminé lorsque la mesure courante n'a pas été analysée, avec l'heure de la mesure concernée.
+
+### Limites de l'évaluation de cohérence
+
+- Le verdict estime la cohérence avec l'historique récent ; il ne vérifie ni la calibration ni la précision du capteur.
+- Un capteur qui dérive lentement peut rester jugé cohérent.
+- Les recommandations sont indicatives et ne remplacent pas une action locale.
+- Une mesure non analysée n'est pas une mesure jugée fiable : elle est présentée comme « Fiabilité non évaluée ».
+
+### Vérification en environnement réel
+
+1. Appliquer la migration, activer l'IA avec une clé valide et lancer le worker.
+2. Envoyer une première mesure : le widget affiche « Mesure reçue » puis « Analyse en attente », puis le verdict (`periodic`).
+3. Envoyer des mesures stables : elles apparaissent avec « Analyse non requise pour cette mesure » et le dernier verdict reste visible.
+4. Provoquer un écart (par exemple +6 °C ou un franchissement de seuil, après la limitation de fréquence) : une analyse `spike` ou `threshold` est créée.
+5. Couper l'accès à OpenAI (clé invalide) : les mesures restent reçues, l'alerte thermique reste affichée et l'analyse passe en `failed` après les tentatives.
+6. Désactiver `IOT_AI_ENABLED` : aucune analyse n'est créée et le widget n'affiche plus de section IA.
+
 ## Analyse IA des risques et de la fiabilité
 
 ### Pourquoi la mesure brute est enregistrée avant l'analyse
@@ -198,7 +258,7 @@ Le fonctionnement retenu est donc :
 
 1. les contrôles déterministes de l'API valident la structure, les plages et l'identité du capteur ;
 2. la mesure brute est enregistrée ;
-3. une analyse IA est créée avec le statut `pending` ;
+3. si les règles de déclenchement la sélectionnent, une analyse IA est créée avec le statut `pending` ;
 4. le travail est envoyé dans la file d'attente ;
 5. l'IA classe la fiabilité et le risque ;
 6. `approved_for_use` passe à `true` uniquement si le verdict de fiabilité vaut `reliable` et si l'historique minimal est disponible.
@@ -268,7 +328,7 @@ php artisan config:cache
 php artisan queue:work --tries=3
 ```
 
-Le worker de file d'attente doit être supervisé et redémarré après un déploiement. Avec une mesure toutes les dix secondes, une analyse systématique peut produire jusqu'à 8 640 appels par appareil et par jour. Il faut donc surveiller les coûts, les quotas et le retard de file, ou réduire la fréquence d'envoi du capteur si ce volume n'est pas souhaité.
+Le worker de file d'attente doit être supervisé et redémarré après un déploiement. Avec une mesure toutes les dix secondes et sans sélection, une analyse systématique produirait jusqu'à 8 640 appels par appareil et par jour ; la stratégie de déclenchement ci-dessus limite ce volume. Il faut malgré tout surveiller les coûts, les quotas et le retard de file.
 
 ## Ce que l'état « normal » ne garantit pas
 
@@ -310,6 +370,12 @@ IOT_AI_MAX_OUTPUT_TOKENS=1000
 IOT_AI_TIMEOUT_SECONDS=60
 IOT_AI_HISTORY_SIZE=10
 IOT_AI_MIN_HISTORY_SIZE=3
+IOT_AI_PERIODIC_INTERVAL_MINUTES=15
+IOT_AI_MIN_SECONDS_BETWEEN_ANALYSES=60
+IOT_AI_TRIGGER_ON_THRESHOLD=true
+IOT_AI_TEMPERATURE_SPIKE_DELTA=5
+IOT_AI_HUMIDITY_SPIKE_DELTA=25
+IOT_AI_ANOMALY_DEVIATION=8
 ```
 
 Après une modification de ces variables sur une installation utilisant le cache de configuration Laravel, reconstruire ce cache et redémarrer les processus PHP persistants concernés.

@@ -2,6 +2,20 @@
 import { BrainCircuit, CircleCheck, Droplets, GripHorizontal, LoaderCircle, Minus, RefreshCw, Thermometer, TriangleAlert } from 'lucide-vue-next';
 import { computed, nextTick, onBeforeUnmount, onMounted, ref } from 'vue';
 
+type AiAnalysisPayload = {
+    status: 'not_required' | 'pending' | 'processing' | 'completed' | 'failed';
+    trigger_reason?: 'periodic' | 'threshold' | 'spike' | 'anomaly' | null;
+    reliability: 'reliable' | 'suspicious' | 'unknown' | null;
+    approved_for_use: boolean | null;
+    risk_level: 'low' | 'moderate' | 'high' | 'critical' | 'unknown' | null;
+    risk_summary: string | null;
+    reliability_reason: string | null;
+    recommendations: string[];
+    disclaimer: string | null;
+    analyzed_at: string | null;
+    measurement_received_at?: string | null;
+};
+
 export interface IotTelemetryReading {
     device_id: string;
     temperature: number;
@@ -14,17 +28,8 @@ export interface IotTelemetryReading {
     safe_temperature_min: number;
     safe_temperature_max: number;
     ai_enabled: boolean;
-    ai_analysis: {
-        status: 'pending' | 'processing' | 'completed' | 'failed';
-        reliability: 'reliable' | 'suspicious' | 'unknown' | null;
-        approved_for_use: boolean | null;
-        risk_level: 'low' | 'moderate' | 'high' | 'critical' | 'unknown' | null;
-        risk_summary: string | null;
-        reliability_reason: string | null;
-        recommendations: string[];
-        disclaimer: string | null;
-        analyzed_at: string | null;
-    } | null;
+    ai_analysis: AiAnalysisPayload | null;
+    last_ai_verdict?: AiAnalysisPayload | null;
 }
 
 const props = defineProps<{
@@ -48,11 +53,31 @@ const isDangerous = computed(() => reading.value.status === 'danger');
 const statusTitle = computed(() => (isDangerous.value ? 'Température dangereuse' : 'Situation normale'));
 const aiAnalysis = computed(() => reading.value.ai_analysis);
 const aiIsPending = computed(() => ['pending', 'processing'].includes(aiAnalysis.value?.status ?? ''));
-const reliabilityLabel = computed(() => {
-    if (aiAnalysis.value?.reliability === 'reliable') return 'Mesure exploitable';
-    if (aiAnalysis.value?.reliability === 'suspicious') return 'Mesure suspecte';
-    return 'Fiabilité indéterminée';
+const aiIsCompleted = computed(() => aiAnalysis.value?.status === 'completed');
+const aiStateLabel = computed(() => {
+    const labels: Record<string, string> = {
+        not_required: 'Analyse non requise pour cette mesure',
+        pending: 'Analyse en attente',
+        processing: 'Analyse en cours',
+        completed: 'Analyse terminée',
+        failed: 'Analyse indisponible',
+    };
+
+    return aiAnalysis.value ? (labels[aiAnalysis.value.status] ?? 'Fiabilité non évaluée') : 'Fiabilité non évaluée';
 });
+const lastVerdict = computed(() => (aiIsCompleted.value ? null : (reading.value.last_ai_verdict ?? null)));
+const reliabilityLabel = computed(() => {
+    if (aiAnalysis.value?.status === 'completed' && aiAnalysis.value.reliability === 'reliable') return 'Mesure cohérente';
+    if (aiAnalysis.value?.status === 'completed' && aiAnalysis.value.reliability === 'suspicious') return 'Mesure suspecte';
+    return 'Fiabilité non évaluée';
+});
+const formatTime = (value: string | null | undefined) =>
+    value ? new Intl.DateTimeFormat('fr-FR', { hour: '2-digit', minute: '2-digit', second: '2-digit' }).format(new Date(value)) : null;
+const verdictLabel = (verdict: AiAnalysisPayload) => {
+    if (verdict.reliability === 'reliable') return 'Mesure cohérente';
+    if (verdict.reliability === 'suspicious') return 'Mesure suspecte';
+    return 'Fiabilité non évaluée';
+};
 const riskLabel = computed(() => {
     const labels = {
         low: 'Risque faible',
@@ -342,7 +367,7 @@ onBeforeUnmount(() => {
                     <BrainCircuit class="size-4 shrink-0" aria-hidden="true" />
                     <p class="text-xs font-black tracking-wide uppercase">Analyse IA</p>
                     <span
-                        v-if="aiAnalysis.status === 'completed'"
+                        v-if="aiIsCompleted"
                         class="ml-auto rounded-full px-2 py-1 text-[0.62rem] font-black"
                         :class="riskClass"
                     >
@@ -350,20 +375,19 @@ onBeforeUnmount(() => {
                     </span>
                 </div>
 
-                <div v-if="!aiAnalysis" class="mt-2 text-xs leading-relaxed opacity-75">
-                    Aucune analyse n’est liée à cette mesure. Elle a peut-être été reçue avant l’activation de l’IA.
-                </div>
+                <p class="mt-2 text-xs font-bold">Mesure reçue · enregistrée</p>
+                <p class="mt-0.5 text-xs opacity-75">{{ aiAnalysis ? aiStateLabel : 'Fiabilité non évaluée : aucune analyse liée à cette mesure.' }}</p>
 
-                <div v-else-if="aiIsPending" class="mt-2 flex items-center gap-2 text-xs opacity-70">
+                <div v-if="aiIsPending" class="mt-2 flex items-center gap-2 text-xs opacity-70">
                     <LoaderCircle class="size-4 animate-spin" aria-hidden="true" />
-                    Analyse de la fiabilité et des risques en cours…
+                    Estimation de cohérence en cours, le statut thermique ci-dessus reste valable.
                 </div>
 
-                <div v-else-if="aiAnalysis.status === 'failed'" class="mt-2 text-xs leading-relaxed opacity-75">
-                    Analyse IA indisponible. La mesure brute reste conservée, mais elle n’est pas validée pour exploitation.
+                <div v-else-if="aiAnalysis?.status === 'failed'" class="mt-2 text-xs leading-relaxed opacity-75">
+                    La mesure brute reste conservée, mais elle n’est pas qualifiée par l’IA.
                 </div>
 
-                <div v-else-if="aiAnalysis.status === 'completed'" class="mt-2 space-y-2 text-xs leading-relaxed">
+                <div v-else-if="aiIsCompleted && aiAnalysis" class="mt-2 space-y-2 text-xs leading-relaxed">
                     <p v-if="aiAnalysis.risk_summary">{{ aiAnalysis.risk_summary }}</p>
                     <div class="rounded-lg bg-black/5 p-2 dark:bg-white/5">
                         <p class="font-black">{{ reliabilityLabel }}</p>
@@ -372,8 +396,17 @@ onBeforeUnmount(() => {
                     <ul v-if="aiAnalysis.recommendations.length" class="list-disc space-y-1 pl-4 opacity-80">
                         <li v-for="recommendation in aiAnalysis.recommendations" :key="recommendation">{{ recommendation }}</li>
                     </ul>
-                    <p v-if="aiAnalysis.disclaimer" class="text-[0.65rem] opacity-55">{{ aiAnalysis.disclaimer }}</p>
                 </div>
+
+                <div v-if="lastVerdict" class="mt-2 rounded-lg bg-black/5 p-2 text-xs leading-relaxed dark:bg-white/5">
+                    <p class="font-black">Dernier verdict IA : {{ verdictLabel(lastVerdict) }}</p>
+                    <p class="opacity-70">Sur la mesure de {{ formatTime(lastVerdict.measurement_received_at) ?? 'date inconnue' }}</p>
+                    <p v-if="lastVerdict.risk_summary" class="mt-0.5 opacity-80">{{ lastVerdict.risk_summary }}</p>
+                </div>
+
+                <p class="mt-2 text-[0.65rem] opacity-55">
+                    {{ aiAnalysis?.disclaimer ?? 'Estimation de cohérence à partir de l’historique ; ce n’est pas une certification de la précision du capteur.' }}
+                </p>
             </section>
 
             <p v-if="refreshError" class="mt-3 rounded-lg bg-red-500/15 px-2 py-1.5 text-[0.68rem] font-bold text-red-700 dark:text-red-200">

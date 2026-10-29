@@ -152,6 +152,49 @@ describe('Editorial dashboard', () => {
     expect(html).toContain('Mesure suspecte');
   });
 
+  it('distinguishes a received measurement whose analysis is not required', async () => {
+    globalThis.__INERTIA_PAGE__ = {
+      props: pageProps(
+        { is_admin: false, is_super_admin: false },
+        {
+          latestTelemetry: {
+            device_id: 'CAPTEUR-SALON',
+            temperature: 24,
+            humidity: 50,
+            measured_at: null,
+            received_at: '2026-10-27T12:30:02+01:00',
+            device_last_seen_at: '2026-10-27T12:30:15+01:00',
+            status: 'safe',
+            message: 'Température de l’air mesurée dans la plage configurée.',
+            safe_temperature_min: 5,
+            safe_temperature_max: 35,
+            ai_enabled: true,
+            ai_analysis: {
+              status: 'not_required',
+              reliability: null,
+              approved_for_use: false,
+              risk_level: null,
+              risk_summary: null,
+              reliability_reason: null,
+              recommendations: [],
+              disclaimer: null,
+              analyzed_at: null,
+            },
+            last_ai_verdict: null,
+          },
+        },
+      ),
+      url: '/dashboard',
+    };
+
+    const { html } = await renderDashboard();
+
+    expect(html).toContain('Mesure reçue');
+    expect(html).toContain('Analyse non requise pour cette mesure');
+    expect(html).toContain('Fiabilité non évaluée');
+    expect(html).not.toContain('Mesure cohérente');
+  });
+
   it('renders intentional empty states when there is no editorial content', async () => {
     globalThis.__INERTIA_PAGE__ = {
       props: pageProps(null, { latestArticles: [], recentGames: [] }),
